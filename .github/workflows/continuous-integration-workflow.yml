@@ -95,6 +95,17 @@ jobs:
           set GRADLE_ENTERPRISE_CACHE_PASSWORD="$GRADLE_ENTERPRISE_CACHE_PASSWORD"
           set GRADLE_ENTERPRISE_ACCESS_KEY="$GRADLE_ENTERPRISE_SECRET_ACCESS_KEY"
           ./gradlew check -PartifactoryUsername="$ARTIFACTORY_USERNAME" -PartifactoryPassword="$ARTIFACTORY_PASSWORD"
+      - name: Track error step
+        uses: spring-projects/track-build-errors-action@v1
+        if: ${{ failure() }}
+        with:
+          job-name: ${{ github.job }}
+      - name: Export errors file
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() }}
+        with:
+          name: errors
+          path: job-${{ github.job }}.txt
   snapshot_tests:
     name: Test against snapshots
     needs: [prerequisites]
