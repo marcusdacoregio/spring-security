@@ -67,4 +67,12 @@ public class AuthorizationFilter extends OncePerRequestFilter {
 		return authentication;
 	}
 
+	/**
+	 * Gets the {@link AuthorizationManager} used by this filter
+	 * @return the {@link AuthorizationManager}
+	 */
+	public AuthorizationManager<HttpServletRequest> getAuthorizationManager() {
+		return this.authorizationManager;
+	}
+
 }

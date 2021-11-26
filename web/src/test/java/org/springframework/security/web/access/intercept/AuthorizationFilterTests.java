@@ -125,4 +125,11 @@ public class AuthorizationFilterTests {
 		verifyNoInteractions(mockFilterChain);
 	}
 
+	@Test
+	public void getAuthorizationManager() {
+		AuthorizationManager<HttpServletRequest> authorizationManager = mock(AuthorizationManager.class);
+		AuthorizationFilter authorizationFilter = new AuthorizationFilter(authorizationManager);
+		assertThat(authorizationFilter.getAuthorizationManager()).isSameAs(authorizationManager);
+	}
+
 }

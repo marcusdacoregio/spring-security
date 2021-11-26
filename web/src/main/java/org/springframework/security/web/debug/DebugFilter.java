@@ -151,6 +151,10 @@ public final class DebugFilter implements Filter {
 	public void destroy() {
 	}
 
+	public FilterChainProxy getFilterChainProxy() {
+		return this.filterChainProxy;
+	}
+
 	static class DebugRequestWrapper extends HttpServletRequestWrapper {
 
 		private static final Logger logger = new Logger();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,18 @@
 
 package org.springframework.security.config.annotation.web.configuration;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.Filter;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -38,6 +42,8 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.security.access.expression.SecurityExpressionHandler;
+import org.springframework.security.access.intercept.AbstractSecurityInterceptor;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.SecurityConfigurer;
 import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
@@ -47,10 +53,16 @@ import org.springframework.security.context.DelegatingApplicationListener;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AuthorizationManagerWebInvocationPrivilegeEvaluator;
+import org.springframework.security.web.access.DefaultWebInvocationPrivilegeEvaluator;
+import org.springframework.security.web.access.RequestMatcherDelegatingWebInvocationPrivilegeEvaluator;
 import org.springframework.security.web.access.WebInvocationPrivilegeEvaluator;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
+import org.springframework.security.web.debug.DebugFilter;
 import org.springframework.util.Assert;
+import org.springframework.web.context.ServletContextAware;
 
 /**
  * Uses a {@link WebSecurity} to create the {@link FilterChainProxy} that performs the web
@@ -67,7 +79,7 @@ import org.springframework.util.Assert;
  * @see WebSecurity
  */
 @Configuration(proxyBeanMethods = false)
-public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAware {
+public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAware, ServletContextAware {
 
 	private WebSecurity webSecurity;
 
@@ -80,6 +92,8 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 	private List<WebSecurityCustomizer> webSecurityCustomizers = Collections.emptyList();
 
 	private ClassLoader beanClassLoader;
+
+	private ServletContext servletContext;
 
 	@Autowired(required = false)
 	private ObjectPostProcessor<Object> objectObjectPostProcessor;
@@ -128,14 +142,61 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 	}
 
 	/**
-	 * Creates the {@link WebInvocationPrivilegeEvaluator} that is necessary for the JSP
-	 * tag support.
+	 * Creates the {@link WebInvocationPrivilegeEvaluator} that is necessary to evaluate
+	 * privileges for a given web URI
 	 * @return the {@link WebInvocationPrivilegeEvaluator}
 	 */
 	@Bean
 	@DependsOn(AbstractSecurityWebApplicationInitializer.DEFAULT_FILTER_NAME)
-	public WebInvocationPrivilegeEvaluator privilegeEvaluator() {
+	public WebInvocationPrivilegeEvaluator privilegeEvaluator(
+			@Qualifier(AbstractSecurityWebApplicationInitializer.DEFAULT_FILTER_NAME) Filter filter) {
+		FilterChainProxy filterChainProxy = resolveFilterChainProxy(filter);
+		if (filterChainProxy != null && filterChainProxy.getFilterChains().size() > 1) {
+			return new RequestMatcherDelegatingWebInvocationPrivilegeEvaluator(
+					extractRequestMatcherPrivilegeEvaluators(filterChainProxy));
+		}
 		return this.webSecurity.getPrivilegeEvaluator();
+	}
+
+	private List<RequestMatcherDelegatingWebInvocationPrivilegeEvaluator.RequestMatcherPrivilegeEvaluator> extractRequestMatcherPrivilegeEvaluators(
+			FilterChainProxy filterChainProxy) {
+		List<RequestMatcherDelegatingWebInvocationPrivilegeEvaluator.RequestMatcherPrivilegeEvaluator> requestMatcherPrivilegeEvaluators = new ArrayList<>();
+		for (SecurityFilterChain securityFilterChain : filterChainProxy.getFilterChains()) {
+			requestMatcherPrivilegeEvaluators.add(createRequestMatcherPrivilegeEvaluator(securityFilterChain));
+		}
+		return requestMatcherPrivilegeEvaluators;
+	}
+
+	private RequestMatcherDelegatingWebInvocationPrivilegeEvaluator.RequestMatcherPrivilegeEvaluator createRequestMatcherPrivilegeEvaluator(
+			SecurityFilterChain securityFilterChain) {
+		WebInvocationPrivilegeEvaluator delegate = null;
+		for (Filter filter : securityFilterChain.getFilters()) {
+			if (filter instanceof AbstractSecurityInterceptor) {
+				DefaultWebInvocationPrivilegeEvaluator evaluator = new DefaultWebInvocationPrivilegeEvaluator(
+						(AbstractSecurityInterceptor) filter);
+				evaluator.setServletContext(this.servletContext);
+				delegate = evaluator;
+				break;
+			}
+			if (filter instanceof AuthorizationFilter) {
+				AuthorizationManager<HttpServletRequest> authorizationManager = ((AuthorizationFilter) filter)
+						.getAuthorizationManager();
+				delegate = new AuthorizationManagerWebInvocationPrivilegeEvaluator(authorizationManager);
+				break;
+			}
+		}
+		return new RequestMatcherDelegatingWebInvocationPrivilegeEvaluator.RequestMatcherPrivilegeEvaluator(
+				securityFilterChain::matches, delegate);
+	}
+
+	private FilterChainProxy resolveFilterChainProxy(Filter filter) {
+		if (filter instanceof DebugFilter) {
+			return ((DebugFilter) filter).getFilterChainProxy();
+		}
+		if (filter instanceof FilterChainProxy) {
+			return (FilterChainProxy) filter;
+		}
+		return null;
 	}
 
 	/**
@@ -204,6 +265,11 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 		if (this.webSecurity != null) {
 			this.webSecurity.debug(this.debugEnabled);
 		}
+	}
+
+	@Override
+	public void setServletContext(ServletContext servletContext) {
+		this.servletContext = servletContext;
 	}
 
 	@Override
