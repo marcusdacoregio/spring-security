@@ -19,8 +19,6 @@ package org.springframework.security.config.annotation.web.configurers.saml2;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.opensaml.core.Version;
-
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,7 +31,6 @@ import org.springframework.security.config.annotation.web.configurers.CsrfConfig
 import org.springframework.security.core.Authentication;
 import org.springframework.security.saml2.provider.service.authentication.AbstractSaml2AuthenticationRequest;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.servlet.filter.Saml2WebSsoAuthenticationFilter;
@@ -43,7 +40,6 @@ import org.springframework.security.saml2.provider.service.web.HttpSessionSaml2A
 import org.springframework.security.saml2.provider.service.web.RelyingPartyRegistrationResolver;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestRepository;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationTokenConverter;
-import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml3AuthenticationRequestResolver;
 import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml4AuthenticationRequestResolver;
 import org.springframework.security.saml2.provider.service.web.authentication.Saml2AuthenticationRequestResolver;
 import org.springframework.security.web.authentication.AuthenticationConverter;
@@ -306,10 +302,7 @@ public final class Saml2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 		if (bean != null) {
 			return bean;
 		}
-		if (version().startsWith("4")) {
-			return new OpenSaml4AuthenticationRequestResolver(relyingPartyRegistrationResolver(http));
-		}
-		return new OpenSaml3AuthenticationRequestResolver(relyingPartyRegistrationResolver(http));
+		return new OpenSaml4AuthenticationRequestResolver(relyingPartyRegistrationResolver(http));
 	}
 
 	private AuthenticationConverter getAuthenticationConverter(B http) {
@@ -327,22 +320,8 @@ public final class Saml2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 		return authenticationConverterBean;
 	}
 
-	private String version() {
-		String version = Version.getVersion();
-		if (version != null) {
-			return version;
-		}
-		return Version.class.getModule().getDescriptor().version().map(Object::toString)
-				.orElseThrow(() -> new IllegalStateException("cannot determine OpenSAML version"));
-	}
-
 	private void registerDefaultAuthenticationProvider(B http) {
-		if (version().startsWith("4")) {
-			http.authenticationProvider(postProcess(new OpenSaml4AuthenticationProvider()));
-		}
-		else {
-			http.authenticationProvider(postProcess(new OpenSamlAuthenticationProvider()));
-		}
+		http.authenticationProvider(postProcess(new OpenSaml4AuthenticationProvider()));
 	}
 
 	private void registerDefaultCsrfOverride(B http) {

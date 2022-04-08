@@ -17,12 +17,13 @@
 package org.springframework.security.saml2.provider.service.authentication;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.joda.time.DateTime;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,7 +73,7 @@ public class DefaultSaml2AuthenticatedPrincipalTests {
 	@Test
 	public void getAttributeWhenDistinctValuesThenReturnsValues() {
 		final Boolean registered = true;
-		final Instant registeredDate = Instant.ofEpochMilli(DateTime.parse("1970-01-01T00:00:00Z").getMillis());
+		final Instant registeredDate = LocalDate.of(1970, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
 		Map<String, List<Object>> attributes = new LinkedHashMap<>();
 		attributes.put("registration", Arrays.asList(registered, registeredDate));
 		DefaultSaml2AuthenticatedPrincipal principal = new DefaultSaml2AuthenticatedPrincipal("user", attributes);

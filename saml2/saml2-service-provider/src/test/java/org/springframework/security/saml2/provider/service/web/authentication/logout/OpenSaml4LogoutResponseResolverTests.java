@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.springframework.security.saml2.provider.service.authentication.logout
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.TestRelyingPartyRegistrations;
 import org.springframework.security.saml2.provider.service.web.RelyingPartyRegistrationResolver;
-import org.springframework.security.saml2.provider.service.web.authentication.logout.OpenSaml3LogoutResponseResolver.LogoutResponseParameters;
+import org.springframework.security.saml2.provider.service.web.authentication.logout.OpenSaml4LogoutResponseResolver.LogoutResponseParameters;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -40,15 +40,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 /**
- * Tests for {@link OpenSaml3LogoutResponseResolver}
+ * Tests for {@link OpenSaml4LogoutResponseResolver}
  */
-public class OpenSaml3LogoutResponseResolverTests {
+public class OpenSaml4LogoutResponseResolverTests {
 
 	RelyingPartyRegistrationResolver relyingPartyRegistrationResolver = mock(RelyingPartyRegistrationResolver.class);
 
 	@Test
 	public void resolveWhenCustomParametersConsumerThenUses() {
-		OpenSaml3LogoutResponseResolver logoutResponseResolver = new OpenSaml3LogoutResponseResolver(
+		OpenSaml4LogoutResponseResolver logoutResponseResolver = new OpenSaml4LogoutResponseResolver(
 				this.relyingPartyRegistrationResolver);
 		Consumer<LogoutResponseParameters> parametersConsumer = mock(Consumer.class);
 		logoutResponseResolver.setParametersConsumer(parametersConsumer);
@@ -69,7 +69,7 @@ public class OpenSaml3LogoutResponseResolverTests {
 
 	@Test
 	public void setParametersConsumerWhenNullThenIllegalArgument() {
-		OpenSaml3LogoutRequestResolver logoutRequestResolver = new OpenSaml3LogoutRequestResolver(
+		OpenSaml4LogoutRequestResolver logoutRequestResolver = new OpenSaml4LogoutRequestResolver(
 				this.relyingPartyRegistrationResolver);
 		assertThatExceptionOfType(IllegalArgumentException.class)
 				.isThrownBy(() -> logoutRequestResolver.setParametersConsumer(null));

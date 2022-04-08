@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,65 +21,69 @@ import java.time.Instant;
 import java.util.function.Consumer;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.opensaml.saml.saml2.core.LogoutResponse;
+import org.opensaml.saml.saml2.core.LogoutRequest;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.security.saml2.provider.service.authentication.logout.Saml2LogoutResponse;
+import org.springframework.security.saml2.provider.service.authentication.logout.Saml2LogoutRequest;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.web.RelyingPartyRegistrationResolver;
 import org.springframework.util.Assert;
 
 /**
- * A {@link Saml2LogoutResponseResolver} for resolving SAML 2.0 Logout Responses with
+ * A {@link Saml2LogoutRequestResolver} for resolving SAML 2.0 Logout Requests with
  * OpenSAML 4
  *
  * @author Josh Cummings
  * @since 5.6
  */
-public final class OpenSaml4LogoutResponseResolver implements Saml2LogoutResponseResolver {
+public final class OpenSaml4LogoutRequestResolver implements Saml2LogoutRequestResolver {
 
-	private final OpenSamlLogoutResponseResolver logoutResponseResolver;
+	private final OpenSamlLogoutRequestResolver logoutRequestResolver;
 
-	private Consumer<LogoutResponseParameters> parametersConsumer = (parameters) -> {
+	private Consumer<LogoutRequestParameters> parametersConsumer = (parameters) -> {
 	};
 
 	private Clock clock = Clock.systemUTC();
 
 	/**
-	 * Construct a {@link OpenSaml4LogoutResponseResolver}
+	 * Construct a {@link OpenSaml4LogoutRequestResolver}
 	 */
-	public OpenSaml4LogoutResponseResolver(RelyingPartyRegistrationResolver relyingPartyRegistrationResolver) {
-		this.logoutResponseResolver = new OpenSamlLogoutResponseResolver(relyingPartyRegistrationResolver);
+	public OpenSaml4LogoutRequestResolver(RelyingPartyRegistrationResolver relyingPartyRegistrationResolver) {
+		this.logoutRequestResolver = new OpenSamlLogoutRequestResolver(relyingPartyRegistrationResolver);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Saml2LogoutResponse resolve(HttpServletRequest request, Authentication authentication) {
-		return this.logoutResponseResolver.resolve(request, authentication, (registration, logoutResponse) -> {
-			logoutResponse.setIssueInstant(Instant.now(this.clock));
+	public Saml2LogoutRequest resolve(HttpServletRequest request, Authentication authentication) {
+		return this.logoutRequestResolver.resolve(request, authentication, (registration, logoutRequest) -> {
+			logoutRequest.setIssueInstant(Instant.now(this.clock));
 			this.parametersConsumer
-					.accept(new LogoutResponseParameters(request, registration, authentication, logoutResponse));
+					.accept(new LogoutRequestParameters(request, registration, authentication, logoutRequest));
 		});
 	}
 
 	/**
-	 * Set a {@link Consumer} for modifying the OpenSAML {@link LogoutResponse}
+	 * Set a {@link Consumer} for modifying the OpenSAML {@link LogoutRequest}
 	 * @param parametersConsumer a consumer that accepts an
-	 * {@link LogoutResponseParameters}
+	 * {@link LogoutRequestParameters}
 	 */
-	public void setParametersConsumer(Consumer<LogoutResponseParameters> parametersConsumer) {
+	public void setParametersConsumer(Consumer<LogoutRequestParameters> parametersConsumer) {
 		Assert.notNull(parametersConsumer, "parametersConsumer cannot be null");
 		this.parametersConsumer = parametersConsumer;
 	}
 
+	/**
+	 * Use this {@link Clock} for determining the issued {@link Instant}
+	 * @param clock the {@link Clock} to use
+	 */
 	public void setClock(Clock clock) {
 		Assert.notNull(clock, "clock must not be null");
 		this.clock = clock;
 	}
 
-	public static final class LogoutResponseParameters {
+	public static final class LogoutRequestParameters {
 
 		private final HttpServletRequest request;
 
@@ -87,14 +91,14 @@ public final class OpenSaml4LogoutResponseResolver implements Saml2LogoutRespons
 
 		private final Authentication authentication;
 
-		private final LogoutResponse logoutResponse;
+		private final LogoutRequest logoutRequest;
 
-		public LogoutResponseParameters(HttpServletRequest request, RelyingPartyRegistration registration,
-				Authentication authentication, LogoutResponse logoutResponse) {
+		public LogoutRequestParameters(HttpServletRequest request, RelyingPartyRegistration registration,
+				Authentication authentication, LogoutRequest logoutRequest) {
 			this.request = request;
 			this.registration = registration;
 			this.authentication = authentication;
-			this.logoutResponse = logoutResponse;
+			this.logoutRequest = logoutRequest;
 		}
 
 		public HttpServletRequest getRequest() {
@@ -109,8 +113,8 @@ public final class OpenSaml4LogoutResponseResolver implements Saml2LogoutRespons
 			return this.authentication;
 		}
 
-		public LogoutResponse getLogoutResponse() {
-			return this.logoutResponse;
+		public LogoutRequest getLogoutRequest() {
+			return this.logoutRequest;
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,55 +16,43 @@
 
 package org.springframework.security.saml2.provider.service.web.authentication.logout;
 
-import java.util.function.Consumer;
-
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
-import org.opensaml.saml.saml2.core.LogoutRequest;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.saml2.core.Saml2ParameterNames;
-import org.springframework.security.saml2.provider.service.authentication.TestOpenSamlObjects;
-import org.springframework.security.saml2.provider.service.authentication.logout.Saml2LogoutResponse;
+import org.springframework.security.saml2.provider.service.authentication.logout.Saml2LogoutRequest;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.TestRelyingPartyRegistrations;
 import org.springframework.security.saml2.provider.service.web.RelyingPartyRegistrationResolver;
-import org.springframework.security.saml2.provider.service.web.authentication.logout.OpenSaml4LogoutResponseResolver.LogoutResponseParameters;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 /**
- * Tests for {@link OpenSaml4LogoutResponseResolver}
+ * Tests for {@link OpenSaml4LogoutRequestResolver}
  */
-public class OpenSaml4LogoutResponseResolverTests {
+public class OpenSaml4LogoutRequestResolverTests {
 
 	RelyingPartyRegistrationResolver relyingPartyRegistrationResolver = mock(RelyingPartyRegistrationResolver.class);
 
 	@Test
 	public void resolveWhenCustomParametersConsumerThenUses() {
-		OpenSaml4LogoutResponseResolver logoutResponseResolver = new OpenSaml4LogoutResponseResolver(
+		OpenSaml4LogoutRequestResolver logoutRequestResolver = new OpenSaml4LogoutRequestResolver(
 				this.relyingPartyRegistrationResolver);
-		Consumer<LogoutResponseParameters> parametersConsumer = mock(Consumer.class);
-		logoutResponseResolver.setParametersConsumer(parametersConsumer);
-		MockHttpServletRequest request = new MockHttpServletRequest();
+		logoutRequestResolver.setParametersConsumer((parameters) -> parameters.getLogoutRequest().setID("myid"));
+		HttpServletRequest request = new MockHttpServletRequest();
 		RelyingPartyRegistration registration = TestRelyingPartyRegistrations.relyingPartyRegistration()
-				.assertingPartyDetails(
-						(party) -> party.singleLogoutServiceResponseLocation("https://ap.example.com/logout"))
+				.assertingPartyDetails((party) -> party.singleLogoutServiceLocation("https://ap.example.com/logout"))
 				.build();
 		Authentication authentication = new TestingAuthenticationToken("user", "password");
-		LogoutRequest logoutRequest = TestOpenSamlObjects.assertingPartyLogoutRequest(registration);
-		request.setParameter(Saml2ParameterNames.SAML_REQUEST,
-				Saml2Utils.samlEncode(OpenSamlSigningUtils.serialize(logoutRequest).getBytes()));
 		given(this.relyingPartyRegistrationResolver.resolve(any(), any())).willReturn(registration);
-		Saml2LogoutResponse logoutResponse = logoutResponseResolver.resolve(request, authentication);
-		assertThat(logoutResponse).isNotNull();
-		verify(parametersConsumer).accept(any());
+		Saml2LogoutRequest logoutRequest = logoutRequestResolver.resolve(request, authentication);
+		assertThat(logoutRequest.getId()).isEqualTo("myid");
 	}
 
 	@Test
