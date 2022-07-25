@@ -17,7 +17,10 @@
 package org.springframework.security.web.access;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -98,6 +101,8 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 
 	protected MessageSourceAccessor messages = SpringSecurityMessageSource.getAccessor();
 
+	private List<DispatcherType> swallowExceptionsDispatcherTypes = List.of(DispatcherType.ERROR);
+
 	public ExceptionTranslationFilter(AuthenticationEntryPoint authenticationEntryPoint) {
 		this(authenticationEntryPoint, new HttpSessionRequestCache());
 	}
@@ -140,12 +145,21 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 			if (securityException == null) {
 				rethrow(ex);
 			}
+			if (shouldSwallowException(request)) {
+				logger.trace("Swallowed Spring Security Exception because dispatcher type '"
+						+ request.getDispatcherType() + "' is configured to swallow exceptions");
+				return;
+			}
 			if (response.isCommitted()) {
 				throw new ServletException("Unable to handle the Spring Security Exception "
 						+ "because the response is already committed.", ex);
 			}
 			handleSpringSecurityException(request, response, chain, securityException);
 		}
+	}
+
+	private boolean shouldSwallowException(HttpServletRequest request) {
+		return this.swallowExceptionsDispatcherTypes.contains(request.getDispatcherType());
 	}
 
 	private void rethrow(Exception ex) throws ServletException {
@@ -252,6 +266,17 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 	public void setSecurityContextHolderStrategy(SecurityContextHolderStrategy securityContextHolderStrategy) {
 		Assert.notNull(securityContextHolderStrategy, "securityContextHolderStrategy cannot be null");
 		this.securityContextHolderStrategy = securityContextHolderStrategy;
+	}
+
+	/**
+	 * Sets the list of {@link DispatcherType} that the exceptions should be swallowed
+	 * from. Pass an empty list if no exception should be swallowed.
+	 * @param dispatcherTypes list of dispatcher types to swallow exceptions from
+	 * @since 5.8
+	 */
+	public void setSwallowExceptionsDispatcherTypes(List<DispatcherType> dispatcherTypes) {
+		Assert.notNull(dispatcherTypes, "dispatcherTypes cannot be null");
+		this.swallowExceptionsDispatcherTypes = dispatcherTypes;
 	}
 
 	/**
