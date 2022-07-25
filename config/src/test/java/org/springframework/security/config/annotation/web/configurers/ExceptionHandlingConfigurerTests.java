@@ -16,6 +16,10 @@
 
 package org.springframework.security.config.annotation.web.configurers;
 
+import java.util.Arrays;
+import java.util.Collections;
+
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
@@ -23,8 +27,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.SecurityContextChangedListenerConfig;
@@ -40,9 +47,12 @@ import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.accept.ContentNegotiationStrategy;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.NativeWebRequest;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -228,6 +238,25 @@ public class ExceptionHandlingConfigurerTests {
 				any(HttpServletResponse.class), any(AuthenticationException.class));
 	}
 
+	@Test
+	void getWhenSwallowExceptionsFromErrorDispatcherAndAccessDeniedExceptionThenRespondsWithOriginalStatus418()
+			throws Exception {
+		this.spring.register(SwallowExceptionsDispatcherTypeErrorConfig.class).autowire();
+		this.mvc.perform(get("/public/deny").with((request) -> {
+			request.setDispatcherType(DispatcherType.ERROR);
+			return request;
+		})).andExpect(status().isIAmATeapot());
+	}
+
+	@Test
+	void getWhenSwallowExceptionsEmptyAndAccessDeniedExceptionThenRespondsWith403() throws Exception {
+		this.spring.register(SwallowExceptionsEmptyListConfig.class).autowire();
+		this.mvc.perform(get("/public/deny").with((request) -> {
+			request.setDispatcherType(DispatcherType.ERROR);
+			return request;
+		})).andExpect(status().isForbidden());
+	}
+
 	@EnableWebSecurity
 	static class ObjectPostProcessorConfig extends WebSecurityConfigurerAdapter {
 
@@ -346,6 +375,70 @@ public class ExceptionHandlingConfigurerTests {
 					.authenticationEntryPoint(AEP).and()
 				.exceptionHandling();
 			// @formatter:on
+		}
+
+	}
+
+	@EnableWebSecurity
+	@Configuration
+	static class SwallowExceptionsDispatcherTypeErrorConfig {
+
+		@Bean
+		SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+			// @formatter:off
+			http
+				.authorizeHttpRequests((requests) -> requests
+					.antMatchers("/public/**").permitAll()
+					.anyRequest().authenticated()
+				)
+				.exceptionHandling((exceptions) -> exceptions
+					.swallowExceptionsForDispatcherTypes(Arrays.asList(DispatcherType.ERROR))
+				);
+			// @formatter:on
+			return http.build();
+		}
+
+		@RestController
+		static class DenyController {
+
+			@GetMapping("/public/deny")
+			String fail(HttpServletResponse response) {
+				response.setStatus(HttpStatus.I_AM_A_TEAPOT.value());
+				throw new AccessDeniedException("Denied");
+			}
+
+		}
+
+	}
+
+	@EnableWebSecurity
+	@Configuration
+	static class SwallowExceptionsEmptyListConfig {
+
+		@Bean
+		SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+			// @formatter:off
+			http
+				.authorizeHttpRequests((requests) -> requests
+					.antMatchers("/public/**").permitAll()
+					.anyRequest().authenticated()
+				)
+				.exceptionHandling((exceptions) -> exceptions
+					.swallowExceptionsForDispatcherTypes(Collections.emptyList())
+				);
+			// @formatter:on
+			return http.build();
+		}
+
+		@RestController
+		static class DenyController {
+
+			@GetMapping("/public/deny")
+			String fail(HttpServletResponse response) {
+				response.setStatus(HttpStatus.I_AM_A_TEAPOT.value());
+				throw new AccessDeniedException("Denied");
+			}
+
 		}
 
 	}

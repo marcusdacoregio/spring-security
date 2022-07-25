@@ -17,6 +17,9 @@
 package org.springframework.security.config.annotation.web.configurers;
 
 import java.util.LinkedHashMap;
+import java.util.List;
+
+import jakarta.servlet.DispatcherType;
 
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -30,6 +33,7 @@ import org.springframework.security.web.authentication.Http403ForbiddenEntryPoin
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.util.Assert;
 
 /**
  * Adds exception handling for Spring Security related exceptions to an application. All
@@ -73,6 +77,8 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 	private LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> defaultEntryPointMappings = new LinkedHashMap<>();
 
 	private LinkedHashMap<RequestMatcher, AccessDeniedHandler> defaultDeniedHandlerMappings = new LinkedHashMap<>();
+
+	private List<DispatcherType> swallowExceptionsDispatcherTypes;
 
 	/**
 	 * Creates a new instance
@@ -165,6 +171,19 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 	}
 
 	/**
+	 * Sets the list of {@link DispatcherType} that the exceptions should be swallowed
+	 * from. Pass an empty list if no exception should be swallowed.
+	 * @param dispatcherTypes list of dispatcher types to swallow exceptions from
+	 * @return the {@link ExceptionHandlingConfigurer} for further customizations
+	 * @since 5.8
+	 */
+	public ExceptionHandlingConfigurer<H> swallowExceptionsForDispatcherTypes(List<DispatcherType> dispatcherTypes) {
+		Assert.notNull(dispatcherTypes, "dispatcherTypes cannot be null");
+		this.swallowExceptionsDispatcherTypes = dispatcherTypes;
+		return this;
+	}
+
+	/**
 	 * Gets any explicitly configured {@link AuthenticationEntryPoint}
 	 * @return
 	 */
@@ -186,6 +205,9 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 		ExceptionTranslationFilter exceptionTranslationFilter = new ExceptionTranslationFilter(entryPoint,
 				getRequestCache(http));
 		AccessDeniedHandler deniedHandler = getAccessDeniedHandler(http);
+		if (this.swallowExceptionsDispatcherTypes != null) {
+			exceptionTranslationFilter.setSwallowExceptionsDispatcherTypes(this.swallowExceptionsDispatcherTypes);
+		}
 		exceptionTranslationFilter.setAccessDeniedHandler(deniedHandler);
 		exceptionTranslationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
 		exceptionTranslationFilter = postProcess(exceptionTranslationFilter);

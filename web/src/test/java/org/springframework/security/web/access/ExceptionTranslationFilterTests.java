@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 the original author or authors.
+ * Copyright 2004-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package org.springframework.security.web.access;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Locale;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -54,6 +56,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 /**
@@ -300,6 +303,30 @@ public class ExceptionTranslationFilterTests {
 		String code = "code";
 		filter.messages.getMessage(code);
 		verify(source).getMessage(eq(code), any(), any());
+	}
+
+	@Test
+	void setSwallowExceptionsDispatcherTypesWhenNullThenThrowsException() {
+		ExceptionTranslationFilter filter = new ExceptionTranslationFilter(this.mockEntryPoint);
+		assertThatIllegalArgumentException().isThrownBy(() -> filter.setSwallowExceptionsDispatcherTypes(null))
+				.withMessage("dispatcherTypes cannot be null");
+	}
+
+	@Test
+	void doFilterWhenSwallowExceptionForDispatcherTypeThenNoException() throws ServletException, IOException {
+		FilterChain chain = (request, response) -> {
+			throw new AccessDeniedException("Denied");
+		};
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setDispatcherType(DispatcherType.ERROR);
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		this.mockEntryPoint = mock(AuthenticationEntryPoint.class);
+		AccessDeniedHandler accessDeniedHandler = mock(AccessDeniedHandler.class);
+		ExceptionTranslationFilter filter = new ExceptionTranslationFilter(this.mockEntryPoint);
+		filter.setAccessDeniedHandler(accessDeniedHandler);
+		filter.setSwallowExceptionsDispatcherTypes(Arrays.asList(DispatcherType.ERROR));
+		filter.doFilter(request, response, chain);
+		verifyNoInteractions(this.mockEntryPoint, accessDeniedHandler);
 	}
 
 	private AuthenticationEntryPoint mockEntryPoint = (request, response, authException) -> response
