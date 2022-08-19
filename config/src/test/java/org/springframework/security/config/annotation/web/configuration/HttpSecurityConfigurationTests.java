@@ -21,8 +21,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import com.google.common.net.HttpHeaders;
 import jakarta.servlet.http.HttpServletRequest;
+import com.google.common.net.HttpHeaders;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -60,6 +60,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -310,6 +311,56 @@ public class HttpSecurityConfigurationTests {
 		assertThat(configurer.configure).isTrue();
 	}
 
+	@Test
+	public void postWhenDefaultsDisabledFilterChainBeanThenRespondsWithOk() throws Exception {
+		this.spring.register(DefaultsDisabledConfig.class, PostController.class).autowire();
+		this.mockMvc.perform(post("/")).andExpect(status().isOk());
+	}
+
+	@Test
+	public void getWhenDefaultsDisabledThenNoDefaultHeadersInResponse() throws Exception {
+		this.spring.register(DefaultsDisabledConfig.class).autowire();
+		// @formatter:off
+		MvcResult mvcResult = this.mockMvc.perform(get("/").secure(true))
+				.andExpect(header().doesNotExist(HttpHeaders.X_CONTENT_TYPE_OPTIONS))
+				.andExpect(header().doesNotExist(HttpHeaders.X_FRAME_OPTIONS))
+				.andExpect(
+						header().doesNotExist(HttpHeaders.STRICT_TRANSPORT_SECURITY))
+				.andExpect(header().doesNotExist(HttpHeaders.CACHE_CONTROL))
+				.andExpect(header().doesNotExist(HttpHeaders.EXPIRES))
+				.andExpect(header().doesNotExist(HttpHeaders.PRAGMA))
+				.andExpect(header().doesNotExist(HttpHeaders.X_XSS_PROTECTION))
+				.andReturn();
+		// @formatter:on
+		assertThat(mvcResult.getResponse().getHeaderNames()).doesNotContain(HttpHeaders.X_CONTENT_TYPE_OPTIONS,
+				HttpHeaders.X_FRAME_OPTIONS, HttpHeaders.STRICT_TRANSPORT_SECURITY, HttpHeaders.CACHE_CONTROL,
+				HttpHeaders.EXPIRES, HttpHeaders.PRAGMA, HttpHeaders.X_XSS_PROTECTION);
+	}
+
+	@Test
+	public void logoutWhenDefaultsDisabledThenNoLogoutEndpoint() throws Exception {
+		this.spring.register(DefaultsDisabledConfig.class).autowire();
+		this.mockMvc.perform(post("/logout")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	public void loginWhenDefaultsDisabledThenDefaultLoginPageNotGenerated() throws Exception {
+		this.spring.register(DefaultsDisabledConfig.class).autowire();
+		this.mockMvc.perform(get("/login")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	public void loginWhenDefaultsDisabledThenDefaultLoginFailurePageNotGenerated() throws Exception {
+		this.spring.register(DefaultsDisabledConfig.class).autowire();
+		this.mockMvc.perform(get("/login?error")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	public void loginWhenDefaultsDisabledThenDefaultLogoutSuccessPageNotGenerated() throws Exception {
+		this.spring.register(DefaultsDisabledConfig.class).autowire();
+		this.mockMvc.perform(get("/login?logout")).andExpect(status().isNotFound());
+	}
+
 	@RestController
 	static class NameController {
 
@@ -468,6 +519,27 @@ public class HttpSecurityConfigurationTests {
 		@EventListener
 		void onAuthenticationFailureEvent(AbstractAuthenticationFailureEvent event) {
 			EVENTS.add(event);
+		}
+
+	}
+
+	@Configuration
+	@EnableWebSecurity
+	static class DefaultsDisabledConfig {
+
+		@Bean
+		SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+			http.defaultsDisabled();
+			return http.build();
+		}
+
+	}
+
+	@RestController
+	static class PostController {
+
+		@PostMapping("/")
+		void index() {
 		}
 
 	}
