@@ -28,9 +28,11 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.OrderComparator;
 import org.springframework.core.Ordered;
+import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -45,12 +47,14 @@ import org.springframework.security.config.annotation.web.AbstractRequestMatcher
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AnonymousConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer.AuthorizationManagerRequestMatcherRegistry;
 import org.springframework.security.config.annotation.web.configurers.ChannelSecurityConfigurer;
 import org.springframework.security.config.annotation.web.configurers.CorsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
+import org.springframework.security.config.annotation.web.configurers.DefaultLoginPageConfigurer;
 import org.springframework.security.config.annotation.web.configurers.ExceptionHandlingConfigurer;
 import org.springframework.security.config.annotation.web.configurers.ExpressionUrlAuthorizationConfigurer;
 import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer;
@@ -74,6 +78,7 @@ import org.springframework.security.config.annotation.web.configurers.saml2.Saml
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
@@ -83,6 +88,7 @@ import org.springframework.security.web.PortMapperImpl;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -94,6 +100,8 @@ import org.springframework.util.Assert;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * A {@link HttpSecurity} is similar to Spring Security's XML &lt;http&gt; element in the
@@ -160,7 +168,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 	 */
 	@SuppressWarnings("unchecked")
 	public HttpSecurity(ObjectPostProcessor<Object> objectPostProcessor,
-			AuthenticationManagerBuilder authenticationBuilder, Map<Class<?>, Object> sharedObjects) {
+			AuthenticationManagerBuilder authenticationBuilder, Map<Class<?>, Object> sharedObjects) throws Exception {
 		super(objectPostProcessor);
 		Assert.notNull(authenticationBuilder, "authenticationBuilder cannot be null");
 		setSharedObject(AuthenticationManagerBuilder.class, authenticationBuilder);
@@ -169,6 +177,7 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 		}
 		ApplicationContext context = (ApplicationContext) sharedObjects.get(ApplicationContext.class);
 		this.requestMatcherConfigurer = new RequestMatcherConfigurer(context);
+		applyDefaults();
 	}
 
 	private ApplicationContext getContext() {
@@ -2973,9 +2982,83 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 		return HttpSecurity.this;
 	}
 
+	/**
+	 * Clears all the default configurers. It also disables the configurers loaded from
+	 * the {@code spring.factories} file. After doing so, one can add configurers back.
+	 * For example, if you only want to use Spring Security's CSRF protection you can use
+	 * the following:
+	 *
+	 * <pre>
+	 * http.defaultsDisabled().csrf(Customizer.withDefaults());
+	 * </pre>
+	 * @return the {@link HttpSecurity} for additional customization
+	 */
+	@SuppressWarnings("unchecked")
+	public HttpSecurity defaultsDisabled() throws Exception {
+		this.filters.removeIf((orderedFilter) -> orderedFilter.filter instanceof WebAsyncManagerIntegrationFilter);
+		// @formatter:off
+		csrf(CsrfConfigurer::disable)
+			.exceptionHandling(ExceptionHandlingConfigurer::disable)
+			.headers(HeadersConfigurer::disable)
+			.sessionManagement(SessionManagementConfigurer::disable)
+			.securityContext(SecurityContextConfigurer::disable)
+			.requestCache(RequestCacheConfigurer::disable)
+			.anonymous(AnonymousConfigurer::disable)
+			.servletApi(ServletApiConfigurer::disable)
+			.logout(LogoutConfigurer::disable);
+		// @formatter:on
+		removeConfigurers(DefaultLoginPageConfigurer.class);
+		removeSpringFactoriesConfigurers();
+		return HttpSecurity.this;
+	}
+
 	@Override
 	public <C> void setSharedObject(Class<C> sharedType, C object) {
 		super.setSharedObject(sharedType, object);
+	}
+
+	private void applyDefaults() throws Exception {
+		ApplicationContext context = getContext();
+		ObjectProvider<SecurityContextHolderStrategy> securityContextHolderStrategyProvider = context
+				.getBeanProvider(SecurityContextHolderStrategy.class);
+		SecurityContextHolderStrategy securityContextHolderStrategy = securityContextHolderStrategyProvider
+				.getIfAvailable(SecurityContextHolder::getContextHolderStrategy);
+		WebAsyncManagerIntegrationFilter webAsyncManagerIntegrationFilter = new WebAsyncManagerIntegrationFilter();
+		webAsyncManagerIntegrationFilter.setSecurityContextHolderStrategy(securityContextHolderStrategy);
+		addFilter(webAsyncManagerIntegrationFilter);
+		applyDefaultConfigurers();
+	}
+
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	private void applyDefaultConfigurers() throws Exception {
+		// @formatter:off
+		csrf(withDefaults())
+			.exceptionHandling(withDefaults())
+			.headers(withDefaults())
+			.sessionManagement(withDefaults())
+			.securityContext(withDefaults())
+			.requestCache(withDefaults())
+			.anonymous(withDefaults())
+			.servletApi(withDefaults())
+			.apply(new DefaultLoginPageConfigurer<>());
+		logout(withDefaults());
+		// @formatter:on
+		ClassLoader classLoader = getContext().getClassLoader();
+		List<AbstractHttpConfigurer> springFactoriesHttpConfigurers = SpringFactoriesLoader
+				.loadFactories(AbstractHttpConfigurer.class, classLoader);
+		for (AbstractHttpConfigurer configurer : springFactoriesHttpConfigurers) {
+			apply(configurer);
+		}
+	}
+
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	private void removeSpringFactoriesConfigurers() {
+		ClassLoader classLoader = getContext().getClassLoader();
+		List<AbstractHttpConfigurer> defaultHttpConfigurers = SpringFactoriesLoader
+				.loadFactories(AbstractHttpConfigurer.class, classLoader);
+		for (AbstractHttpConfigurer configurer : defaultHttpConfigurers) {
+			removeConfigurers(configurer.getClass());
+		}
 	}
 
 	@Override
