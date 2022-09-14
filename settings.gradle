@@ -2,6 +2,8 @@ pluginManagement {
 	repositories {
 		gradlePluginPortal()
 		maven { url 'https://repo.spring.io/plugins-release' }
+		maven { url 'https://repo.spring.io/milestone' }
+		maven { url "https://repo.spring.io/libs-snapshot" }
 	}
 }
 
@@ -52,3 +54,4 @@ buildFiles.each { File buildFile ->
 		project.buildFileName = buildFile.name
 	}
 }
+
