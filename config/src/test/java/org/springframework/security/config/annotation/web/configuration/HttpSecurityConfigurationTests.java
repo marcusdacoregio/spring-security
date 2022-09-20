@@ -32,8 +32,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.mock.web.MockHttpSession;
@@ -311,6 +314,61 @@ public class HttpSecurityConfigurationTests {
 		this.spring.register(DefaultWithFilterChainConfig.class).autowire();
 		assertThat(configurer.init).isTrue();
 		assertThat(configurer.configure).isTrue();
+	}
+
+	@Test
+	public void configureWhenCustomHttpSecurityBeanPrimaryThenNoFilters() {
+		this.spring.register(CustomHttpSecurityBeanConfig.class, DefaultWithFilterChainConfig.class);
+		SecurityFilterChain securityFilterChain = this.spring.getContext().getBean(SecurityFilterChain.class);
+		assertThat(securityFilterChain.getFilters()).isEmpty();
+	}
+
+	@Test
+	public void configureWhenCustomHttpSecurityBeanPrimaryAndUseQualifierThenUseQualifiedHttpSecurity() {
+		this.spring.register(CustomHttpSecurityBeanConfig.class, QualifiedHttpSecurityConfig.class);
+		SecurityFilterChain securityFilterChain = this.spring.getContext().getBean(SecurityFilterChain.class);
+		assertThat(securityFilterChain.getFilters()).isNotEmpty();
+	}
+
+	@Test
+	public void configureWhenCustomHttpSecurityThenNoFilters() {
+		this.spring.register(CustomHttpSecurityBeanConfig.class, NoBeanHttpSecurityConfig.class);
+		SecurityFilterChain securityFilterChain = this.spring.getContext().getBean(SecurityFilterChain.class);
+		assertThat(securityFilterChain.getFilters()).isEmpty();
+	}
+
+	@Configuration
+	@EnableWebSecurity
+	static class NoBeanHttpSecurityConfig {
+
+		@Bean
+		SecurityFilterChain filterChain(ApplicationContext context) throws Exception {
+			return new HttpSecurity(context).build();
+		}
+
+	}
+
+	@Configuration
+	@EnableWebSecurity
+	static class QualifiedHttpSecurityConfig {
+
+		@Bean
+		SecurityFilterChain filterChain(@Qualifier(HttpSecurityConfiguration.HTTPSECURITY_BEAN_NAME) HttpSecurity http)
+				throws Exception {
+			return http.build();
+		}
+
+	}
+
+	@Configuration
+	static class CustomHttpSecurityBeanConfig {
+
+		@Bean
+		@Primary
+		HttpSecurity customHttpSecurity(ApplicationContext context) throws Exception {
+			return new HttpSecurity(context);
+		}
+
 	}
 
 	@RestController

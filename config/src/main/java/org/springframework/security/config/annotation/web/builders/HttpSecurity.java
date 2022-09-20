@@ -18,6 +18,7 @@ package org.springframework.security.config.annotation.web.builders;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -28,12 +29,16 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.OrderComparator;
 import org.springframework.core.Ordered;
+import org.springframework.core.ResolvableType;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.AbstractConfiguredSecurityBuilder;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
@@ -41,6 +46,10 @@ import org.springframework.security.config.annotation.SecurityBuilder;
 import org.springframework.security.config.annotation.SecurityConfigurer;
 import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.authentication.configurers.provisioning.InMemoryUserDetailsManagerConfigurer;
+import org.springframework.security.config.annotation.authentication.configurers.provisioning.JdbcUserDetailsManagerConfigurer;
+import org.springframework.security.config.annotation.authentication.configurers.userdetails.DaoAuthenticationConfigurer;
 import org.springframework.security.config.annotation.web.AbstractRequestMatcherRegistry;
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -75,6 +84,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.web.DefaultSecurityFilterChain;
@@ -150,6 +161,11 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 
 	private AuthenticationManager authenticationManager;
 
+	public HttpSecurity(ApplicationContext context) throws Exception {
+		this(withObjectPostProcessor(context), withAuthenticationBuilder(context),
+				Collections.singletonMap(ApplicationContext.class, context));
+	}
+
 	/**
 	 * Creates a new instance
 	 * @param objectPostProcessor the {@link ObjectPostProcessor} that should be used
@@ -169,6 +185,37 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 		}
 		ApplicationContext context = (ApplicationContext) sharedObjects.get(ApplicationContext.class);
 		this.requestMatcherConfigurer = new RequestMatcherConfigurer(context);
+	}
+
+	private static AuthenticationManagerBuilder withAuthenticationBuilder(ApplicationContext context) throws Exception {
+		LazyPasswordEncoder passwordEncoder = new LazyPasswordEncoder(context);
+		ObjectPostProcessor<Object> objectPostProcessor = withObjectPostProcessor(context);
+		AuthenticationManagerBuilder authenticationBuilder = new DefaultPasswordEncoderAuthenticationManagerBuilder(
+				objectPostProcessor, passwordEncoder);
+		authenticationBuilder.parentAuthenticationManager(getAuthenticationManager(context));
+		authenticationBuilder
+				.authenticationEventPublisher(getAuthenticationEventPublisher(context, objectPostProcessor));
+		return authenticationBuilder;
+	}
+
+	private static AuthenticationManager getAuthenticationManager(ApplicationContext context) throws Exception {
+		AuthenticationConfiguration authenticationConfiguration = context.getBean(AuthenticationConfiguration.class);
+		return authenticationConfiguration.getAuthenticationManager();
+	}
+
+	private static AuthenticationEventPublisher getAuthenticationEventPublisher(ApplicationContext context,
+			ObjectPostProcessor<Object> objectPostProcessor) {
+		if (context.getBeanNamesForType(AuthenticationEventPublisher.class).length > 0) {
+			return context.getBean(AuthenticationEventPublisher.class);
+		}
+		return objectPostProcessor.postProcess(new DefaultAuthenticationEventPublisher());
+	}
+
+	@SuppressWarnings("unchecked")
+	private static ObjectPostProcessor<Object> withObjectPostProcessor(ApplicationContext context) {
+		String[] beanNamesForType = context
+				.getBeanNamesForType(ResolvableType.forClassWithGenerics(ObjectPostProcessor.class, Object.class));
+		return (ObjectPostProcessor<Object>) context.getBean(beanNamesForType[0]);
 	}
 
 	private ApplicationContext getContext() {
@@ -3538,6 +3585,92 @@ public final class HttpSecurity extends AbstractConfiguredSecurityBuilder<Defaul
 		@Override
 		public String toString() {
 			return "OrderedFilter{" + "filter=" + this.filter + ", order=" + this.order + '}';
+		}
+
+	}
+
+	static class DefaultPasswordEncoderAuthenticationManagerBuilder extends AuthenticationManagerBuilder {
+
+		private PasswordEncoder defaultPasswordEncoder;
+
+		/**
+		 * Creates a new instance
+		 * @param objectPostProcessor the {@link ObjectPostProcessor} instance to use.
+		 */
+		DefaultPasswordEncoderAuthenticationManagerBuilder(ObjectPostProcessor<Object> objectPostProcessor,
+				PasswordEncoder defaultPasswordEncoder) {
+			super(objectPostProcessor);
+			this.defaultPasswordEncoder = defaultPasswordEncoder;
+		}
+
+		@Override
+		public InMemoryUserDetailsManagerConfigurer<AuthenticationManagerBuilder> inMemoryAuthentication()
+				throws Exception {
+			return super.inMemoryAuthentication().passwordEncoder(this.defaultPasswordEncoder);
+		}
+
+		@Override
+		public JdbcUserDetailsManagerConfigurer<AuthenticationManagerBuilder> jdbcAuthentication() throws Exception {
+			return super.jdbcAuthentication().passwordEncoder(this.defaultPasswordEncoder);
+		}
+
+		@Override
+		public <T extends UserDetailsService> DaoAuthenticationConfigurer<AuthenticationManagerBuilder, T> userDetailsService(
+				T userDetailsService) throws Exception {
+			return super.userDetailsService(userDetailsService).passwordEncoder(this.defaultPasswordEncoder);
+		}
+
+	}
+
+	static class LazyPasswordEncoder implements PasswordEncoder {
+
+		private ApplicationContext applicationContext;
+
+		private PasswordEncoder passwordEncoder;
+
+		LazyPasswordEncoder(ApplicationContext applicationContext) {
+			this.applicationContext = applicationContext;
+		}
+
+		@Override
+		public String encode(CharSequence rawPassword) {
+			return getPasswordEncoder().encode(rawPassword);
+		}
+
+		@Override
+		public boolean matches(CharSequence rawPassword, String encodedPassword) {
+			return getPasswordEncoder().matches(rawPassword, encodedPassword);
+		}
+
+		@Override
+		public boolean upgradeEncoding(String encodedPassword) {
+			return getPasswordEncoder().upgradeEncoding(encodedPassword);
+		}
+
+		private PasswordEncoder getPasswordEncoder() {
+			if (this.passwordEncoder != null) {
+				return this.passwordEncoder;
+			}
+			PasswordEncoder passwordEncoder = getBeanOrNull(PasswordEncoder.class);
+			if (passwordEncoder == null) {
+				passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+			}
+			this.passwordEncoder = passwordEncoder;
+			return passwordEncoder;
+		}
+
+		private <T> T getBeanOrNull(Class<T> type) {
+			try {
+				return this.applicationContext.getBean(type);
+			}
+			catch (NoSuchBeanDefinitionException ex) {
+				return null;
+			}
+		}
+
+		@Override
+		public String toString() {
+			return getPasswordEncoder().toString();
 		}
 
 	}

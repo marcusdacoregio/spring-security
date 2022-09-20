@@ -30,7 +30,6 @@ import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -52,7 +51,7 @@ class HttpSecurityConfiguration {
 
 	private static final String BEAN_NAME_PREFIX = "org.springframework.security.config.annotation.web.configuration.HttpSecurityConfiguration.";
 
-	private static final String HTTPSECURITY_BEAN_NAME = BEAN_NAME_PREFIX + "httpSecurity";
+	public static final String HTTPSECURITY_BEAN_NAME = BEAN_NAME_PREFIX + "httpSecurity";
 
 	private ObjectPostProcessor<Object> objectPostProcessor;
 
@@ -86,13 +85,7 @@ class HttpSecurityConfiguration {
 	@Bean(HTTPSECURITY_BEAN_NAME)
 	@Scope("prototype")
 	HttpSecurity httpSecurity() throws Exception {
-		WebSecurityConfigurerAdapter.LazyPasswordEncoder passwordEncoder = new WebSecurityConfigurerAdapter.LazyPasswordEncoder(
-				this.context);
-		AuthenticationManagerBuilder authenticationBuilder = new WebSecurityConfigurerAdapter.DefaultPasswordEncoderAuthenticationManagerBuilder(
-				this.objectPostProcessor, passwordEncoder);
-		authenticationBuilder.parentAuthenticationManager(authenticationManager());
-		authenticationBuilder.authenticationEventPublisher(getAuthenticationEventPublisher());
-		HttpSecurity http = new HttpSecurity(this.objectPostProcessor, authenticationBuilder, createSharedObjects());
+		HttpSecurity http = new HttpSecurity(this.context);
 		WebAsyncManagerIntegrationFilter webAsyncManagerIntegrationFilter = new WebAsyncManagerIntegrationFilter();
 		webAsyncManagerIntegrationFilter.setSecurityContextHolderStrategy(this.securityContextHolderStrategy);
 		// @formatter:off
