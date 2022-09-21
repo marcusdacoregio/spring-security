@@ -3295,10 +3295,7 @@ public class ServerHttpSecurity {
 			if (this.corsFilter != null) {
 				return this.corsFilter;
 			}
-			CorsConfigurationSource source = getBeanOrNull(CorsConfigurationSource.class);
-			if (source == null) {
-				return null;
-			}
+			CorsConfigurationSource source = getBean(CorsConfigurationSource.class);
 			CorsProcessor processor = getBeanOrNull(CorsProcessor.class);
 			if (processor == null) {
 				processor = new DefaultCorsProcessor();

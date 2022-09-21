@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.publisher.TestPublisher;
 
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -74,11 +76,13 @@ import org.springframework.test.web.reactive.server.FluxExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -478,6 +482,15 @@ public class ServerHttpSecurityTests {
 		SecurityWebFilterChain securityWebFilterChain = this.http.build();
 		WebFilter x509WebFilter = securityWebFilterChain.getWebFilters().filter(this::isX509Filter).blockFirst();
 		assertThat(x509WebFilter).isNotNull();
+	}
+
+	@Test
+	public void corsWhenNoCorsConfigurationSourceBeanThenException() {
+		ApplicationContext context = mock(ApplicationContext.class);
+		this.http.setApplicationContext(context);
+		this.http.cors(withDefaults());
+		given(context.getBean(CorsConfigurationSource.class)).willThrow(NoSuchBeanDefinitionException.class);
+		assertThatExceptionOfType(NoSuchBeanDefinitionException.class).isThrownBy(() -> this.http.build());
 	}
 
 	@Test
