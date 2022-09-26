@@ -380,7 +380,9 @@ public final class WebSecurity extends AbstractConfiguredSecurityBuilder<Filter,
 	 * {@link MvcRequestMatcher#setMethod(HttpMethod)}
 	 *
 	 * @author Rob Winch
+	 * @deprecated use {@link MvcRequestMatcher.Builder} instead
 	 */
+	@Deprecated
 	public final class MvcMatchersIgnoredRequestConfigurer extends IgnoredRequestConfigurer {
 
 		private final List<MvcRequestMatcher> mvcMatchers;
@@ -412,14 +414,22 @@ public final class WebSecurity extends AbstractConfiguredSecurityBuilder<Filter,
 			setApplicationContext(context);
 		}
 
+		/**
+		 * @deprecated use {@link #requestMatchers(HttpMethod, String...)} instead
+		 */
 		@Override
+		@Deprecated
 		public MvcMatchersIgnoredRequestConfigurer mvcMatchers(HttpMethod method, String... mvcPatterns) {
 			List<MvcRequestMatcher> mvcMatchers = createMvcMatchers(method, mvcPatterns);
 			WebSecurity.this.ignoredRequests.addAll(mvcMatchers);
 			return new MvcMatchersIgnoredRequestConfigurer(getApplicationContext(), mvcMatchers);
 		}
 
+		/**
+		 * @deprecated use {@link #requestMatchers(String...)} instead
+		 */
 		@Override
+		@Deprecated
 		public MvcMatchersIgnoredRequestConfigurer mvcMatchers(String... mvcPatterns) {
 			return mvcMatchers(null, mvcPatterns);
 		}
