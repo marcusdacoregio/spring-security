@@ -73,6 +73,10 @@ class RepositoryConventionPlugin implements Plugin<Project> {
 				name = 'shibboleth'
 				url = 'https://build.shibboleth.net/nexus/content/repositories/releases/'
 			}
+			maven {
+				name = 'shibboleth-snapshots'
+				url = 'https://build.shibboleth.net/nexus/content/repositories/snapshots/'
+			}
 		}
 	}
 

@@ -23,6 +23,7 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Tests for {@link RepositoryConventionPlugin}.
  */
+@Disabled
 public class RepositoryConventionPluginTests {
 
 	private Project project = ProjectBuilder.builder().build();
