@@ -21,6 +21,8 @@ import java.util.Collections;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -253,7 +255,7 @@ public abstract class AbstractAuthenticationFilterConfigurer<B extends HttpSecur
 	}
 
 	protected final RequestMatcher getAuthenticationEntryPointMatcher(B http) {
-		ContentNegotiationStrategy contentNegotiationStrategy = http.getSharedObject(ContentNegotiationStrategy.class);
+		ContentNegotiationStrategy contentNegotiationStrategy = getBeanOrNull(http, ContentNegotiationStrategy.class);
 		if (contentNegotiationStrategy == null) {
 			contentNegotiationStrategy = new HeaderContentNegotiationStrategy();
 		}
@@ -411,6 +413,16 @@ public abstract class AbstractAuthenticationFilterConfigurer<B extends HttpSecur
 	private void setLoginPage(String loginPage) {
 		this.loginPage = loginPage;
 		this.authenticationEntryPoint = new LoginUrlAuthenticationEntryPoint(loginPage);
+	}
+
+	private <C> C getBeanOrNull(B http, Class<C> type) {
+		try {
+			ApplicationContext context = http.getSharedObject(ApplicationContext.class);
+			return context.getBean(type);
+		}
+		catch (NoSuchBeanDefinitionException ex) {
+			return null;
+		}
 	}
 
 	@SuppressWarnings("unchecked")

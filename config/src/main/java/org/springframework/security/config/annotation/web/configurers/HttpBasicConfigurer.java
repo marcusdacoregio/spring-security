@@ -22,6 +22,8 @@ import java.util.LinkedHashMap;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
@@ -148,7 +150,7 @@ public final class HttpBasicConfigurer<B extends HttpSecurityBuilder<B>>
 	}
 
 	private void registerDefaults(B http) {
-		ContentNegotiationStrategy contentNegotiationStrategy = http.getSharedObject(ContentNegotiationStrategy.class);
+		ContentNegotiationStrategy contentNegotiationStrategy = getBeanOrNull(http, ContentNegotiationStrategy.class);
 		if (contentNegotiationStrategy == null) {
 			contentNegotiationStrategy = new HeaderContentNegotiationStrategy();
 		}
@@ -202,6 +204,16 @@ public final class HttpBasicConfigurer<B extends HttpSecurityBuilder<B>>
 		basicAuthenticationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
 		basicAuthenticationFilter = postProcess(basicAuthenticationFilter);
 		http.addFilter(basicAuthenticationFilter);
+	}
+
+	private <T> T getBeanOrNull(B http, Class<T> type) {
+		try {
+			ApplicationContext context = http.getSharedObject(ApplicationContext.class);
+			return context.getBean(type);
+		}
+		catch (NoSuchBeanDefinitionException ex) {
+			return null;
+		}
 	}
 
 }

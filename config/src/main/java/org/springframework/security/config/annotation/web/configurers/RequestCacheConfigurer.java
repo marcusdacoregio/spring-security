@@ -162,7 +162,7 @@ public final class RequestCacheConfigurer<H extends HttpSecurityBuilder<H>>
 	}
 
 	private RequestMatcher notMatchingMediaType(H http, MediaType mediaType) {
-		ContentNegotiationStrategy contentNegotiationStrategy = http.getSharedObject(ContentNegotiationStrategy.class);
+		ContentNegotiationStrategy contentNegotiationStrategy = getBeanOrNull(ContentNegotiationStrategy.class);
 		if (contentNegotiationStrategy == null) {
 			contentNegotiationStrategy = new HeaderContentNegotiationStrategy();
 		}

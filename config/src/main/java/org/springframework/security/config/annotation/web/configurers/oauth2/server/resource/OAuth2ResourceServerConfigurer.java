@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.MediaType;
@@ -297,8 +298,7 @@ public final class OAuth2ResourceServerConfigurer<H extends HttpSecurityBuilder<
 	private void registerDefaultEntryPoint(H http) {
 		ExceptionHandlingConfigurer<H> exceptionHandling = http.getConfigurer(ExceptionHandlingConfigurer.class);
 		if (exceptionHandling != null) {
-			ContentNegotiationStrategy contentNegotiationStrategy = http
-					.getSharedObject(ContentNegotiationStrategy.class);
+			ContentNegotiationStrategy contentNegotiationStrategy = getBeanOrNull(ContentNegotiationStrategy.class);
 			if (contentNegotiationStrategy == null) {
 				contentNegotiationStrategy = new HeaderContentNegotiationStrategy();
 			}
@@ -356,6 +356,15 @@ public final class OAuth2ResourceServerConfigurer<H extends HttpSecurityBuilder<
 			}
 		}
 		return this.bearerTokenResolver;
+	}
+
+	private <T> T getBeanOrNull(Class<T> type) {
+		try {
+			return this.context.getBean(type);
+		}
+		catch (NoSuchBeanDefinitionException ex) {
+			return null;
+		}
 	}
 
 	public class JwtConfigurer {
