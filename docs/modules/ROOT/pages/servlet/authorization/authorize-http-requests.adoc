@@ -172,7 +172,7 @@ SecurityFilterChain web(HttpSecurity http) throws Exception {
 By default, the `AuthorizationFilter` applies to all dispatcher types.
 We can configure Spring Security to not apply the authorization rules to all dispatcher types by using the `shouldFilterAllDispatcherTypes` method:
 
-.Set shouldFilterAllDispatcherTypes to false
+.Allow specific dispatcher types
 ====
 .Java
 [source,java,role="primary"]

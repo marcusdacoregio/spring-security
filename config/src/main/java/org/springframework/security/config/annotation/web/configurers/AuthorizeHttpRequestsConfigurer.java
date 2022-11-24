@@ -186,7 +186,17 @@ public final class AuthorizeHttpRequestsConfigurer<H extends HttpSecurityBuilder
 		 * @return the {@link AuthorizationManagerRequestMatcherRegistry} for further
 		 * customizations
 		 * @since 5.7
+		 * @deprecated instead of setting to {@code false}, permit the dispatcher types in the security configuration
+		 * <pre>
+		 *     &#64;Bean
+		 *     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+		 *         http.authorizeHttpRequests((authz) -> authz
+		 *             .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.ASYNC).permitAll()
+		 *         );
+		 *     }
+		 * </pre>
 		 */
+		@Deprecated(since = "6.1", forRemoval = true)
 		public AuthorizationManagerRequestMatcherRegistry shouldFilterAllDispatcherTypes(boolean shouldFilter) {
 			this.shouldFilterAllDispatcherTypes = shouldFilter;
 			return this;

@@ -41,6 +41,7 @@ import java.util.function.Supplier
  * @property shouldFilterAllDispatcherTypes whether the [AuthorizationFilter] should filter all dispatcher types
  */
 class AuthorizeHttpRequestsDsl : AbstractRequestMatcherDsl() {
+    @Deprecated("instead of setting to false, permit the dispatcher type in the security configuration")
     var shouldFilterAllDispatcherTypes: Boolean? = null
 
     private val authorizationRules = mutableListOf<AuthorizationManagerRule>()

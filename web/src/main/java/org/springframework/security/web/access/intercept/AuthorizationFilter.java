@@ -170,7 +170,17 @@ public class AuthorizationFilter extends GenericFilterBean {
 	 * @param shouldFilterAllDispatcherTypes should filter all dispatcher types. Default
 	 * is {@code true}
 	 * @since 5.7
+	 * @deprecated instead of setting to {@code false}, permit the dispatcher types in the security configuration
+	 * <pre>
+	 *     &#64;Bean
+	 *     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+	 *         http.authorizeHttpRequests((authz) -> authz
+	 *             .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.ASYNC).permitAll()
+	 *         );
+	 *     }
+	 * </pre>
 	 */
+	@Deprecated(since = "6.1", forRemoval = true)
 	public void setShouldFilterAllDispatcherTypes(boolean shouldFilterAllDispatcherTypes) {
 		this.observeOncePerRequest = !shouldFilterAllDispatcherTypes;
 		this.filterErrorDispatch = shouldFilterAllDispatcherTypes;
