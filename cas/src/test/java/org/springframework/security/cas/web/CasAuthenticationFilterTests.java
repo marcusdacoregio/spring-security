@@ -1,5 +1,5 @@
 /*
- * Copyright 2004, 2005, 2006 Acegi Technology Pty Limited
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 package org.springframework.security.cas.web;
 
 import jakarta.servlet.FilterChain;
-
-import org.jasig.cas.client.proxy.ProxyGrantingTicketStorage;
+import org.apereo.cas.client.proxy.ProxyGrantingTicketStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,8 +40,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 /**
  * Tests {@link CasAuthenticationFilter}.
@@ -173,7 +172,7 @@ public class CasAuthenticationFilterTests {
 		assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull()
 				.withFailMessage("Authentication should not be null");
 		verify(chain).doFilter(request, response);
-		verifyZeroInteractions(successHandler);
+		verifyNoInteractions(successHandler);
 		// validate for when the filterProcessUrl matches
 		filter.setFilterProcessesUrl(request.getServletPath());
 		SecurityContextHolder.clearContext();
@@ -193,7 +192,7 @@ public class CasAuthenticationFilterTests {
 		filter.setProxyGrantingTicketStorage(mock(ProxyGrantingTicketStorage.class));
 		filter.setProxyReceptorUrl(request.getServletPath());
 		filter.doFilter(request, response, chain);
-		verifyZeroInteractions(chain);
+		verifyNoInteractions(chain);
 	}
 
 }
