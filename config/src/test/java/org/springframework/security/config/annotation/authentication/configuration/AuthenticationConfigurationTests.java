@@ -24,7 +24,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -118,16 +117,22 @@ public class AuthenticationConfigurationTests {
 	@Test
 	public void getAuthenticationManagerWhenNoAuthenticationThenNull() throws Exception {
 		this.spring.register(AuthenticationConfiguration.class, ObjectPostProcessorConfiguration.class).autowire();
-		assertThat(this.spring.getContext().getBean(AuthenticationConfiguration.class).getAuthenticationManager())
-				.isNull();
+		AuthenticationManager authenticationManager = this.spring.getContext()
+				.getBean(AuthenticationConfiguration.class).getAuthenticationManager();
+		assertThat(authenticationManager).isInstanceOf(AuthenticationConfiguration.LazyAuthenticationManager.class);
+		assertThat(ReflectionTestUtils.<AuthenticationManager>invokeMethod(authenticationManager,
+				"getAuthenticationManager")).isNull();
 	}
 
 	@Test
 	public void getAuthenticationManagerWhenNoOpGlobalAuthenticationConfigurerAdapterThenNull() throws Exception {
 		this.spring.register(AuthenticationConfiguration.class, ObjectPostProcessorConfiguration.class,
 				NoOpGlobalAuthenticationConfigurerAdapter.class).autowire();
-		assertThat(this.spring.getContext().getBean(AuthenticationConfiguration.class).getAuthenticationManager())
-				.isNull();
+		AuthenticationManager authenticationManager = this.spring.getContext()
+				.getBean(AuthenticationConfiguration.class).getAuthenticationManager();
+		assertThat(authenticationManager).isInstanceOf(AuthenticationConfiguration.LazyAuthenticationManager.class);
+		assertThat(ReflectionTestUtils.<AuthenticationManager>invokeMethod(authenticationManager,
+				"getAuthenticationManager")).isNull();
 	}
 
 	@Test
@@ -182,17 +187,6 @@ public class AuthenticationConfigurationTests {
 		config.setGlobalAuthenticationConfigurers(Arrays.asList(new BootGlobalAuthenticationConfigurerAdapter()));
 		AuthenticationManager authenticationManager = config.getAuthenticationManager();
 		authenticationManager.authenticate(UsernamePasswordAuthenticationToken.unauthenticated("boot", "password"));
-	}
-
-	// gh-2531
-	@Test
-	public void getAuthenticationManagerWhenPostProcessThenUsesBeanClassLoaderOnProxyFactoryBean() throws Exception {
-		this.spring.register(Sec2531Config.class).autowire();
-		ObjectPostProcessor<Object> opp = this.spring.getContext().getBean(ObjectPostProcessor.class);
-		given(opp.postProcess(any())).willAnswer((a) -> a.getArgument(0));
-		AuthenticationConfiguration config = this.spring.getContext().getBean(AuthenticationConfiguration.class);
-		config.getAuthenticationManager();
-		verify(opp).postProcess(any(ProxyFactoryBean.class));
 	}
 
 	@Test

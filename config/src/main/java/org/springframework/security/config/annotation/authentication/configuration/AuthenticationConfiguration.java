@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.aop.framework.ProxyFactoryBean;
-import org.springframework.aop.target.LazyInitTargetSource;
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,6 +107,9 @@ public class AuthenticationConfiguration {
 
 	public AuthenticationManager getAuthenticationManager() throws Exception {
 		if (this.authenticationManagerInitialized) {
+			if (this.authenticationManager instanceof LazyAuthenticationManager lazyAuthenticationManager) {
+				return lazyAuthenticationManager.getAuthenticationManager();
+			}
 			return this.authenticationManager;
 		}
 		AuthenticationManagerBuilder authBuilder = this.applicationContext.getBean(AuthenticationManagerBuilder.class);
@@ -149,51 +150,8 @@ public class AuthenticationConfiguration {
 		return this.objectPostProcessor.postProcess(new DefaultAuthenticationEventPublisher());
 	}
 
-	@SuppressWarnings("unchecked")
-	private <T> T lazyBean(Class<T> interfaceName) {
-		LazyInitTargetSource lazyTargetSource = new LazyInitTargetSource();
-		String[] beanNamesForType = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(this.applicationContext,
-				interfaceName);
-		if (beanNamesForType.length == 0) {
-			return null;
-		}
-		String beanName = getBeanName(interfaceName, beanNamesForType);
-		lazyTargetSource.setTargetBeanName(beanName);
-		lazyTargetSource.setBeanFactory(this.applicationContext);
-		ProxyFactoryBean proxyFactory = new ProxyFactoryBean();
-		proxyFactory = this.objectPostProcessor.postProcess(proxyFactory);
-		proxyFactory.setTargetSource(lazyTargetSource);
-		return (T) proxyFactory.getObject();
-	}
-
-	private <T> String getBeanName(Class<T> interfaceName, String[] beanNamesForType) {
-		if (beanNamesForType.length == 1) {
-			return beanNamesForType[0];
-		}
-		List<String> primaryBeanNames = getPrimaryBeanNames(beanNamesForType);
-		Assert.isTrue(primaryBeanNames.size() != 0, () -> "Found " + beanNamesForType.length + " beans for type "
-				+ interfaceName + ", but none marked as primary");
-		Assert.isTrue(primaryBeanNames.size() == 1,
-				() -> "Found " + primaryBeanNames.size() + " beans for type " + interfaceName + " marked as primary");
-		return primaryBeanNames.get(0);
-	}
-
-	private List<String> getPrimaryBeanNames(String[] beanNamesForType) {
-		List<String> list = new ArrayList<>();
-		if (!(this.applicationContext instanceof ConfigurableApplicationContext)) {
-			return Collections.emptyList();
-		}
-		for (String beanName : beanNamesForType) {
-			if (((ConfigurableApplicationContext) this.applicationContext).getBeanFactory().getBeanDefinition(beanName)
-					.isPrimary()) {
-				list.add(beanName);
-			}
-		}
-		return list;
-	}
-
 	private AuthenticationManager getAuthenticationManagerBean() {
-		return lazyBean(AuthenticationManager.class);
+		return new LazyAuthenticationManager(this.applicationContext);
 	}
 
 	private static <T> T getBeanOrNull(ApplicationContext applicationContext, Class<T> type) {
@@ -340,6 +298,63 @@ public class AuthenticationConfiguration {
 		@Override
 		public String toString() {
 			return getPasswordEncoder().toString();
+		}
+
+	}
+
+	static class LazyAuthenticationManager implements AuthenticationManager {
+
+		private final ApplicationContext applicationContext;
+
+		private AuthenticationManager authenticationManager;
+
+		LazyAuthenticationManager(ApplicationContext applicationContext) {
+			this.applicationContext = applicationContext;
+		}
+
+		@Override
+		public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+			return getAuthenticationManager().authenticate(authentication);
+		}
+
+		private AuthenticationManager getAuthenticationManager() {
+			if (this.authenticationManager != null) {
+				return this.authenticationManager;
+			}
+			String[] beanNamesForType = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(this.applicationContext,
+					AuthenticationManager.class);
+			if (beanNamesForType.length == 0) {
+				return null;
+			}
+			String beanName = getBeanName(AuthenticationManager.class, beanNamesForType);
+			this.authenticationManager = (AuthenticationManager) this.applicationContext.getBean(beanName);
+			return this.authenticationManager;
+		}
+
+		private <T> String getBeanName(Class<T> interfaceName, String[] beanNamesForType) {
+			if (beanNamesForType.length == 1) {
+				return beanNamesForType[0];
+			}
+			List<String> primaryBeanNames = getPrimaryBeanNames(beanNamesForType);
+			Assert.isTrue(primaryBeanNames.size() != 0, () -> "Found " + beanNamesForType.length + " beans for type "
+					+ interfaceName + ", but none marked as primary");
+			Assert.isTrue(primaryBeanNames.size() == 1, () -> "Found " + primaryBeanNames.size() + " beans for type "
+					+ interfaceName + " marked as primary");
+			return primaryBeanNames.get(0);
+		}
+
+		private List<String> getPrimaryBeanNames(String[] beanNamesForType) {
+			List<String> list = new ArrayList<>();
+			if (!(this.applicationContext instanceof ConfigurableApplicationContext)) {
+				return Collections.emptyList();
+			}
+			for (String beanName : beanNamesForType) {
+				if (((ConfigurableApplicationContext) this.applicationContext).getBeanFactory()
+						.getBeanDefinition(beanName).isPrimary()) {
+					list.add(beanName);
+				}
+			}
+			return list;
 		}
 
 	}
