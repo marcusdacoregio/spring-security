@@ -18,12 +18,16 @@ package org.springframework.security.config.annotation.web.configurers;
 
 import java.util.LinkedHashMap;
 
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
+import org.springframework.security.web.access.NoOpDispatchExceptionHandler;
+import org.springframework.security.web.access.RequestDispatcherExceptionHandler;
 import org.springframework.security.web.access.RequestMatcherDelegatingAccessDeniedHandler;
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
@@ -188,8 +192,31 @@ public final class ExceptionHandlingConfigurer<H extends HttpSecurityBuilder<H>>
 		AccessDeniedHandler deniedHandler = getAccessDeniedHandler(http);
 		exceptionTranslationFilter.setAccessDeniedHandler(deniedHandler);
 		exceptionTranslationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+		RequestDispatcherExceptionHandler dispatchExceptionHandler = getRequestDispatcherExceptionHandler();
+		exceptionTranslationFilter.setRequestDispatchExceptionHandler(dispatchExceptionHandler);
 		exceptionTranslationFilter = postProcess(exceptionTranslationFilter);
 		http.addFilter(exceptionTranslationFilter);
+	}
+
+	private RequestDispatcherExceptionHandler getRequestDispatcherExceptionHandler() {
+		RequestDispatcherExceptionHandler handler = getBeanOrNull(RequestDispatcherExceptionHandler.class);
+		if (handler == null) {
+			return new NoOpDispatchExceptionHandler();
+		}
+		return handler;
+	}
+
+	private <T> T getBeanOrNull(Class<T> type) {
+		ApplicationContext context = getBuilder().getSharedObject(ApplicationContext.class);
+		if (context == null) {
+			return null;
+		}
+		try {
+			return context.getBean(type);
+		}
+		catch (NoSuchBeanDefinitionException ex) {
+			return null;
+		}
 	}
 
 	/**

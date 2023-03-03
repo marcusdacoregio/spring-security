@@ -18,7 +18,9 @@ package org.springframework.security.web.access;
 
 import java.io.IOException;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -96,6 +98,8 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 
 	private RequestCache requestCache = new HttpSessionRequestCache();
 
+	private RequestDispatcherExceptionHandler requestDispatchExceptionHandler;
+
 	protected MessageSourceAccessor messages = SpringSecurityMessageSource.getAccessor();
 
 	public ExceptionTranslationFilter(AuthenticationEntryPoint authenticationEntryPoint) {
@@ -171,6 +175,10 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 
 	private void handleSpringSecurityException(HttpServletRequest request, HttpServletResponse response,
 			FilterChain chain, RuntimeException exception) throws IOException, ServletException {
+		if (this.requestDispatchExceptionHandler.supports(request)) {
+			this.requestDispatchExceptionHandler.handle(request, response, exception);
+			return;
+		}
 		if (exception instanceof AuthenticationException) {
 			handleAuthenticationException(request, response, chain, (AuthenticationException) exception);
 		}
@@ -190,8 +198,8 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 		Authentication authentication = this.securityContextHolderStrategy.getContext().getAuthentication();
 		boolean isAnonymous = this.authenticationTrustResolver.isAnonymous(authentication);
 		if (isAnonymous || this.authenticationTrustResolver.isRememberMe(authentication)) {
-			if (logger.isTraceEnabled()) {
-				logger.trace(LogMessage.format("Sending %s to authentication entry point since access is denied",
+			if (this.logger.isTraceEnabled()) {
+				this.logger.trace(LogMessage.format("Sending %s to authentication entry point since access is denied",
 						authentication), exception);
 			}
 			sendStartAuthentication(request, response, chain,
@@ -200,8 +208,8 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 									"Full authentication is required to access this resource")));
 		}
 		else {
-			if (logger.isTraceEnabled()) {
-				logger.trace(
+			if (this.logger.isTraceEnabled()) {
+				this.logger.trace(
 						LogMessage.format("Sending %s to access denied handler since access is denied", authentication),
 						exception);
 			}
@@ -252,6 +260,11 @@ public class ExceptionTranslationFilter extends GenericFilterBean implements Mes
 	public void setSecurityContextHolderStrategy(SecurityContextHolderStrategy securityContextHolderStrategy) {
 		Assert.notNull(securityContextHolderStrategy, "securityContextHolderStrategy cannot be null");
 		this.securityContextHolderStrategy = securityContextHolderStrategy;
+	}
+
+	public void setRequestDispatchExceptionHandler(RequestDispatcherExceptionHandler requestDispatchExceptionHandler) {
+		Assert.notNull(this.securityContextHolderStrategy, "requestDispatchExceptionHandler cannot be null");
+		this.requestDispatchExceptionHandler = requestDispatchExceptionHandler;
 	}
 
 	/**
