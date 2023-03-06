@@ -174,9 +174,16 @@ public final class Saml2LogoutRequest implements Serializable {
 		return new Builder(registration);
 	}
 
-	public static final class Builder {
+	/**
+	 * Create a new {@link Builder} instance
+	 * @return the {@link Builder} for further configurations
+	 * @since 6.1
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
 
-		private final RelyingPartyRegistration registration;
+	public static final class Builder {
 
 		private String location;
 
@@ -188,10 +195,27 @@ public final class Saml2LogoutRequest implements Serializable {
 
 		private String id;
 
+		private String relyingPartyRegistrationId;
+
+		private Builder() {
+
+		}
+
 		private Builder(RelyingPartyRegistration registration) {
-			this.registration = registration;
+			this.relyingPartyRegistrationId = registration.getRegistrationId();
 			this.location = registration.getAssertingPartyDetails().getSingleLogoutServiceLocation();
 			this.binding = registration.getAssertingPartyDetails().getSingleLogoutServiceBinding();
+		}
+
+		/**
+		 * The identifier for the {@link RelyingPartyRegistration} associated with the Logout
+		 * Request
+		 * @param relyingPartyRegistrationId the {@link RelyingPartyRegistration} identifier
+		 * @return the {@link Builder} for further configurations
+		 */
+		public Builder relyingPartyRegistrationId(String relyingPartyRegistrationId) {
+			this.relyingPartyRegistrationId = relyingPartyRegistrationId;
+			return this;
 		}
 
 		/**
@@ -291,7 +315,7 @@ public final class Saml2LogoutRequest implements Serializable {
 		 */
 		public Saml2LogoutRequest build() {
 			return new Saml2LogoutRequest(this.location, this.binding, this.parameters, this.id,
-					this.registration.getRegistrationId(), this.encoder);
+					this.relyingPartyRegistrationId, this.encoder);
 		}
 
 	}

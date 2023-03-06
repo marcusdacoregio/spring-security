@@ -16,19 +16,13 @@
 
 package org.springframework.security.saml2.jackson2;
 
-import java.util.Map;
-import java.util.function.Function;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.saml2.provider.service.authentication.logout.Saml2LogoutRequest;
-import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 
 /**
  * Jackson Mixin class helps in serialize/deserialize {@link Saml2LogoutRequest}.
@@ -44,18 +38,9 @@ import org.springframework.security.saml2.provider.service.registration.Saml2Mes
  * @see SecurityJackson2Modules
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+@JsonDeserialize(using = Saml2LogoutRequestDeserializer.class)
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE)
 @JsonIgnoreProperties(ignoreUnknown = true)
 class Saml2LogoutRequestMixin {
-
-	@JsonIgnore
-	Function<Map<String, String>, String> encoder;
-
-	@JsonCreator
-	Saml2LogoutRequestMixin(@JsonProperty("location") String location,
-			@JsonProperty("relayState") Saml2MessageBinding relayState,
-			@JsonProperty("parameters") Map<String, String> parameters, @JsonProperty("id") String id,
-			@JsonProperty("relyingPartyRegistrationId") String relyingPartyRegistrationId) {
-	}
 
 }
