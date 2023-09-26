@@ -71,5 +71,20 @@ maven-resolver-transport-http = { module = "org.apache.maven.resolver:maven-reso
 maven-resolver-provider = { module = "org.apache.maven:maven-resolver-provider", version = "3.9.4" }
 spring-javaformat-checkstyle = { module = "io.spring.javaformat:spring-javaformat-checkstyle", version = "0.0.15" }
 nohttp-checkstyle = { module = "io.spring.nohttp:nohttp-checkstyle", version = "0.0.11" }
+google-gson = { module = "com.google.code.gson:gson", version = "2.8.6" }
+trang = { module = "com.thaiopensource:trang", version = "20091111" }
+saxon = { module = "net.sourceforge.saxon:saxon", version = "9.1.0.8" }
+snakeyaml = { module = "org.yaml:snakeyaml", version = "1.30" }
+gradle-nexus-publish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version = "1.1.0" }
+gretty = { module = "org.gretty:gretty", version = "4.0.3" }
+apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version = "2.4.5" }
+gradle-versions-plugin = { module = "com.github.ben-manes:gradle-versions-plugin", version = "0.38.0" }
+mustache-java-compiler = { module = "com.github.spullara.mustache.java:compiler", version = "0.9.4" }
+spring-javaformat-gradle-plugin = { module = "io.spring.javaformat:spring-javaformat-gradle-plugin", version = "0.0.15" }
+nohttp-gradle = { module = "io.spring.nohttp:nohttp-gradle", version = "0.0.11" }
+gradle-ssh-plugin = { module = "org.hidetake:gradle-ssh-plugin", version = "2.10.1" }
+build-info-extractor-gradle = { module = "org.jfrog.buildinfo:build-info-extractor-gradle", version = "4.29.0" }
+sonarqube-gradle-plugin = { module = "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin", version = "2.7.1" }
+commons-io = { module = "org.apache.commons:commons-io", version = "1.3.2" }
 
 [bundles]
