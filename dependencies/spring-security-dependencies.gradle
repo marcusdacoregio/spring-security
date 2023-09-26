@@ -7,72 +7,81 @@ javaPlatform {
 }
 
 dependencies {
-	api platform("org.springframework:spring-framework-bom:$springFrameworkVersion")
-	api platform("io.projectreactor:reactor-bom:$reactorVersion")
-	api platform("io.rsocket:rsocket-bom:1.1.4")
-	api platform("org.junit:junit-bom:5.10.0")
-	api platform("org.mockito:mockito-bom:5.5.0")
-	api platform("org.springframework.data:spring-data-bom:$springDataVersion")
-	api platform("org.jetbrains.kotlin:kotlin-bom:$kotlinDependencyVersion")
-	api platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.3")
-	api platform("com.fasterxml.jackson:jackson-bom:2.15.2")
+	if (project.hasProperty("isOverrideVersionCatalog")) {
+		def springFrameworkVersion = project.property("springFrameworkVersion")
+		def reactorVersion = project.property("reactorVersion")
+		def springDataVersion = project.property("springDataVersion")
+		api platform("org.springframework:spring-framework-bom:$springFrameworkVersion")
+		api platform("io.projectreactor:reactor-bom:$reactorVersion")
+		api platform("org.springframework.data:spring-data-bom:$springDataVersion")
+	} else {
+		api platform(libs.spring.framework.bom)
+		api platform(libs.reactor.bom)
+		api platform(libs.spring.data.bom)
+	}
+	api platform(libs.rsocket.bom)
+	api platform(libs.junit.bom)
+	api platform(libs.mockito.bom)
+	api platform(libs.kotlin.bom)
+	api platform(libs.kotlinx.coroutines.bom)
+	api platform(libs.jackson.bom)
 	constraints {
-		api "ch.qos.logback:logback-classic:1.4.11"
-		api "com.google.inject:guice:3.0"
-		api "com.nimbusds:nimbus-jose-jwt:9.31"
-		api "com.nimbusds:oauth2-oidc-sdk:9.43.3"
-		api "com.squareup.okhttp3:mockwebserver:3.14.9"
-		api "com.squareup.okhttp3:okhttp:3.14.9"
-		api "com.unboundid:unboundid-ldapsdk:6.0.9"
-		api "commons-collections:commons-collections:3.2.2"
-		api "io.mockk:mockk:1.13.7"
-		api "io.micrometer:micrometer-observation:$micrometerVersion"
-		api "jakarta.annotation:jakarta.annotation-api:2.1.1"
-		api "jakarta.inject:jakarta.inject-api:2.0.1"
-		api "jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:3.0.0"
-		api "jakarta.servlet.jsp:jakarta.servlet.jsp-api:3.1.1"
-		api "jakarta.servlet:jakarta.servlet-api:6.0.0"
-		api "jakarta.xml.bind:jakarta.xml.bind-api:4.0.1"
-		api "jakarta.persistence:jakarta.persistence-api:3.1.0"
-		api "jakarta.websocket:jakarta.websocket-api:2.1.1"
-		api "jakarta.websocket:jakarta.websocket-client-api:2.1.1"
-		api "ldapsdk:ldapsdk:4.1"
-		api "net.sourceforge.htmlunit:htmlunit:2.70.0"
-		api "org.apache.directory.server:apacheds-core-entry:1.5.5"
-		api "org.apache.directory.server:apacheds-core:1.5.5"
-		api "org.apache.directory.server:apacheds-protocol-ldap:1.5.5"
-		api "org.apache.directory.server:apacheds-protocol-shared:1.5.5"
-		api "org.apache.directory.server:apacheds-server-jndi:1.5.5"
-		api "org.apache.directory.shared:shared-ldap:0.9.15"
-		api "org.apache.httpcomponents:httpclient:4.5.14"
-		api "org.aspectj:aspectjrt:$aspectjVersion"
-		api "org.aspectj:aspectjweaver:$aspectjVersion"
-		api "org.assertj:assertj-core:3.24.2"
-		api "org.bouncycastle:bcpkix-jdk15on:1.70"
-		api "org.bouncycastle:bcprov-jdk15on:1.70"
-		api "org.eclipse.jetty:jetty-server:11.0.16"
-		api "org.eclipse.jetty:jetty-servlet:11.0.16"
-		api "jakarta.persistence:jakarta.persistence-api:3.1.0"
-		api "org.hamcrest:hamcrest:2.2"
-		api "org.hibernate.orm:hibernate-core:6.3.0.CR1"
-		api "org.hsqldb:hsqldb:2.7.2"
-		api "org.apereo.cas.client:cas-client-core:4.0.2"
-		api "org.opensaml:opensaml-core:$openSamlVersion"
-		api "org.opensaml:opensaml-saml-api:$openSamlVersion"
-		api "org.opensaml:opensaml-saml-impl:$openSamlVersion"
-		api "org.python:jython:2.5.3"
-		api "org.seleniumhq.selenium:htmlunit-driver:2.70.0"
-		api "org.seleniumhq.selenium:selenium-java:3.141.59"
-		api "org.seleniumhq.selenium:selenium-support:3.141.59"
-		api "org.skyscreamer:jsonassert:1.5.1"
-		api "org.slf4j:log4j-over-slf4j:1.7.36"
-		api "org.slf4j:slf4j-api:2.0.9"
-		api "org.springframework.ldap:spring-ldap-core:3.2.0-M3"
-		api "org.synchronoss.cloud:nio-multipart-parser:1.1.0"
-		api 'org.apache.maven.resolver:maven-resolver-connector-basic:1.9.15'
-		api 'org.apache.maven.resolver:maven-resolver-impl:1.9.15'
-		api 'org.apache.maven.resolver:maven-resolver-transport-http:1.9.15'
-		api 'org.apache.maven:maven-resolver-provider:3.9.4'
+		api libs.logback.classic
+		api libs.guice
+		api libs.nimbus.jose.jwt
+		api libs.oauth2.oidc.sdk
+		api libs.mockwebserver
+		api libs.okhttp
+		api libs.unboundid.ldapsdk
+		api libs.commons.collections
+		api libs.mockk
+		api libs.micrometer.observation
+		api libs.jakarta.annotation.api
+		api libs.jakarta.inject.api
+		api libs.jakarta.servlet.jstl.api
+		api libs.jakarta.servlet.jsp.api
+		api libs.jakarta.servlet.api
+		api libs.jakarta.xml.bind.api
+		api libs.jakarta.persistence.api
+		api libs.jakarta.websocket.api
+		api libs.jakarta.websocket.client.api
+		api libs.ldapsdk
+		api libs.htmlunit
+		api libs.apacheds.entry
+		api libs.apacheds.core
+		api libs.apacheds.protocol.ldap
+		api libs.apacheds.protocol.shared
+		api libs.apacheds.server.jndi
+		api libs.shared.ldap
+		api libs.httpclient
+		api libs.aspectjrt
+		api libs.aspectjweaver
+		api libs.assertj.core
+		api libs.bcpkix.jdk15on
+		api libs.bcprov.jdk15on
+		api libs.jetty.server
+		api libs.jetty.servlet
+		api libs.jakarta.persistence.api
+		api libs.hamcrest
+		api libs.hibernate.core
+		api libs.hsqldb
+		api libs.cas.client.core
+		api libs.opensaml.core
+		api libs.opensaml.saml.api
+		api libs.opensaml.saml.impl
+		api libs.jython
+		api libs.selenium.htmlunit.driver
+		api libs.selenium.java
+		api libs.selenium.support
+		api libs.jsonassert
+		api libs.log4j.over.slf4j
+		api libs.slf4j.api
+		api libs.spring.ldap.core
+		api libs.nio.multipart.parser
+		api libs.maven.resolver.connector.basic
+		api libs.maven.resolver.impl
+		api libs.maven.resolver.transport.http
+		api libs.maven.resolver.provider
 	}
 }
 
