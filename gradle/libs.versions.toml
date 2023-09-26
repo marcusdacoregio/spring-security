@@ -69,5 +69,7 @@ maven-resolver-connector-basic = { module = "org.apache.maven.resolver:maven-res
 maven-resolver-impl = { module = "org.apache.maven.resolver:maven-resolver-impl", version = "1.9.15" }
 maven-resolver-transport-http = { module = "org.apache.maven.resolver:maven-resolver-transport-http", version = "1.9.15" }
 maven-resolver-provider = { module = "org.apache.maven:maven-resolver-provider", version = "3.9.4" }
+spring-javaformat-checkstyle = { module = "io.spring.javaformat:spring-javaformat-checkstyle", version = "0.0.15" }
+nohttp-checkstyle = { module = "io.spring.nohttp:nohttp-checkstyle", version = "0.0.11" }
 
 [bundles]
