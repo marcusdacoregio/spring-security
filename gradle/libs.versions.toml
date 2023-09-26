@@ -1,0 +1,93 @@
+[versions]
+apacheds = { strictly = "1.5.5" }
+aspectj = "1.9.20.1"
+opensaml = "4.3.0"
+
+[libraries]
+spring-framework-bom = { module = "org.springframework:spring-framework-bom", version = "6.1.0-M5" }
+spring-data-bom = { module = "org.springframework.data:spring-data-bom", version = "2023.1.0-M3" }
+kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version = "1.9.10" }
+kotlinx-coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version = "1.7.3" }
+reactor-bom = { module = "io.projectreactor:reactor-bom", version = "2023.0.0-M3" }
+rsocket-bom = { module = "io.rsocket:rsocket-bom", version = "1.1.4" }
+
+jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version = "2.15.2" }
+mockito-bom = { module = "org.mockito:mockito-bom", version = "5.5.0" }
+junit-bom = { module = "org.junit:junit-bom", version = "5.10.0" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.4.11" }
+guice = { module = "com.google.inject:guice", version = "3.0" }
+nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.strictly = "9.31" } # nimbus-jose-jwt gets updated when oauth2-oidc-sdk is updated to ensure consistency
+oauth2-oidc-sdk = { module = "com.nimbusds:oauth2-oidc-sdk", version = "9.43.3" }
+mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version = "3.14.9" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version = "3.14.9" }
+unboundid-ldapsdk = { module = "com.unboundid:unboundid-ldapsdk", version = "6.0.9" }
+commons-collections = { module = "commons-collections:commons-collections", version = "3.2.2" }
+mockk = { module = "io.mockk:mockk", version = "1.13.7" }
+micrometer-observation = { module = "io.micrometer:micrometer-observation", version = "1.12.0-M3" }
+jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api", version = "2.1.1" }
+jakarta-inject-api = { module = "jakarta.inject:jakarta.inject-api", version = "2.0.1" }
+jakarta-servlet-jstl-api = { module = "jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api", version = "3.0.0" }
+jakarta-servlet-jsp-api = { module = "jakarta.servlet.jsp:jakarta.servlet.jsp-api", version = "3.0.0" }
+jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api", version = "6.0.0" }
+jakarta-xml-bind-api = { module = "jakarta.xml.bind:jakarta.xml.bind-api", version = "4.0.1" }
+jakarta-persistence-api = { module = "jakarta.persistence:jakarta.persistence-api", version = "3.1.0" }
+jakarta-websocket-api = { module = "jakarta.websocket:jakarta.websocket-api", version = "2.1.1" }
+jakarta-websocket-client-api = { module = "jakarta.websocket:jakarta.websocket-client-api", version = "2.1.1" }
+ldapsdk = { module = "ldapsdk:ldapsdk", version = "4.1" }
+htmlunit = { module = "net.sourceforge.htmlunit:htmlunit", version = "2.70.0" }
+apacheds-core = { module = "org.apache.directory.server:apacheds-core", version.ref = "apacheds" }
+apacheds-entry = { module = "org.apache.directory.server:apacheds-core-entry", version.ref = "apacheds" }
+apacheds-protocol-ldap = { module = "org.apache.directory.server:apacheds-protocol-ldap", version.ref = "apacheds" }
+apacheds-protocol-shared = { module = "org.apache.directory.server:apacheds-protocol-shared", version.ref = "apacheds" }
+apacheds-server-jndi = { module = "org.apache.directory.server:apacheds-server-jndi", version.ref = "apacheds" }
+shared-ldap = { module = "org.apache.directory.shared:shared-ldap", version = "0.9.15" }
+httpclient = { module = "org.apache.httpcomponents:httpclient", version = "4.5.14" }
+aspectjrt = { module = "org.aspectj:aspectjrt", version.ref = "aspectj" }
+aspectjweaver = { module = "org.aspectj:aspectjweaver", version.ref = "aspectj" }
+assertj-core = { module = "org.assertj:assertj-core", version = "3.24.2" }
+bcpkix-jdk15on = { module = "org.bouncycastle:bcpkix-jdk15on", version = "1.70" }
+bcprov-jdk15on = { module = "org.bouncycastle:bcprov-jdk15on", version = "1.70" }
+jetty-server = { module = "org.eclipse.jetty:jetty-server", version = "11.0.16" }
+jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version = "11.0.16" }
+hamcrest = { module = "org.hamcrest:hamcrest", version = "2.2" }
+hibernate-core = { module = "org.hibernate.orm:hibernate-core", version = "6.3.0.CR1" }
+hsqldb = { module = "org.hsqldb:hsqldb", version = "2.7.2" }
+cas-client-core = { module = "org.apereo.cas.client:cas-client-core", version = "4.0.2" }
+opensaml-core = { module = "org.opensaml:opensaml-core", version.ref = "opensaml" }
+opensaml-saml-api = { module = "org.opensaml:opensaml-saml-api", version.ref = "opensaml" }
+opensaml-saml-impl = { module = "org.opensaml:opensaml-saml-impl", version.ref = "opensaml" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version = "1.9.10" }
+jython = { module = "org.python:jython", version.strictly = "2.5.3" } # jython updates break integration tests
+selenium-htmlunit-driver = { module = "org.seleniumhq.selenium:htmlunit-driver", version = "2.70.0" }
+selenium-java = { module = "org.seleniumhq.selenium:selenium-java", version = "3.141.59" }
+selenium-support = { module = "org.seleniumhq.selenium:selenium-support", version = "3.141.59" }
+jsonassert = { module = "org.skyscreamer:jsonassert", version = "1.5.1" }
+log4j-over-slf4j = { module = "org.slf4j:log4j-over-slf4j", version = "1.7.36" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version = "2.0.9" }
+spring-ldap-core = { module = "org.springframework.ldap:spring-ldap-core", version = "3.2.0-M3" }
+nio-multipart-parser = { module = "org.synchronoss.cloud:nio-multipart-parser", version = "1.1.0" }
+maven-resolver-connector-basic = { module = "org.apache.maven.resolver:maven-resolver-connector-basic", version = "1.9.15" }
+maven-resolver-impl = { module = "org.apache.maven.resolver:maven-resolver-impl", version = "1.9.15" }
+maven-resolver-transport-http = { module = "org.apache.maven.resolver:maven-resolver-transport-http", version = "1.9.15" }
+maven-resolver-provider = { module = "org.apache.maven:maven-resolver-provider", version = "3.9.4" }
+spring-javaformat-checkstyle = { module = "io.spring.javaformat:spring-javaformat-checkstyle", version = "0.0.39" }
+nohttp-checkstyle = { module = "io.spring.nohttp:nohttp-checkstyle", version = "0.0.11" }
+google-gson = { module = "com.google.code.gson:gson", version = "2.8.6" }
+trang = { module = "com.thaiopensource:trang", version = "20091111" }
+saxon = { module = "net.sourceforge.saxon:saxon", version = "9.1.0.8" }
+snakeyaml = { module = "org.yaml:snakeyaml", version = "1.30" }
+gradle-nexus-publish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version = "1.1.0" }
+gretty = { module = "org.gretty:gretty", version = "4.0.3" }
+apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version = "2.4.5" }
+gradle-versions-plugin = { module = "com.github.ben-manes:gradle-versions-plugin", version = "0.38.0" }
+mustache-java-compiler = { module = "com.github.spullara.mustache.java:compiler", version = "0.9.4" }
+spring-javaformat-gradle-plugin = { module = "io.spring.javaformat:spring-javaformat-gradle-plugin", version = "0.0.15" }
+nohttp-gradle = { module = "io.spring.nohttp:nohttp-gradle", version = "0.0.11" }
+gradle-ssh-plugin = { module = "org.hidetake:gradle-ssh-plugin", version = "2.10.1" }
+build-info-extractor-gradle = { module = "org.jfrog.buildinfo:build-info-extractor-gradle", version = "4.29.0" }
+sonarqube-gradle-plugin = { module = "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin", version = "2.7.1" }
+commons-io = { module = "org.apache.commons:commons-io", version = "1.3.2" }
+nebula-project-plugin = { module = "com.netflix.nebula:nebula-project-plugin", version = "8.2.0" }
+aspectj-plugin = { module = "io.freefair.gradle:aspectj-plugin", version = "6.6.3" }
+
+[bundles]
