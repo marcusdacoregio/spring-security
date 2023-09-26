@@ -40,7 +40,7 @@ apacheds-entry = { module = "org.apache.directory.server:apacheds-core-entry", v
 apacheds-protocol-ldap = { module = "org.apache.directory.server:apacheds-protocol-ldap", version.ref = "apacheds" }
 apacheds-protocol-shared = { module = "org.apache.directory.server:apacheds-protocol-shared", version.ref = "apacheds" }
 apacheds-server-jndi = { module = "org.apache.directory.server:apacheds-server-jndi", version.ref = "apacheds" }
-shared-ldap = { module = "org.apache.directory.shared:shared-ldap", version = "0.9.15" }
+shared-ldap = { module = "org.apache.directory.shared:shared-ldap", version = "0.9.19" }
 httpclient = { module = "org.apache.httpcomponents:httpclient", version = "4.5.14" }
 aspectjrt = { module = "org.aspectj:aspectjrt", version.ref = "aspectj" }
 aspectjweaver = { module = "org.aspectj:aspectjweaver", version.ref = "aspectj" }
