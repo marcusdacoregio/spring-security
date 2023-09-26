@@ -52,7 +52,7 @@ jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version = "11.0.16
 hamcrest = { module = "org.hamcrest:hamcrest", version = "2.2" }
 hibernate-core = { module = "org.hibernate.orm:hibernate-core", version = "6.3.0.CR1" }
 hsqldb = { module = "org.hsqldb:hsqldb", version = "2.7.2" }
-cas-client-core = { module = "org.apereo.cas.client:cas-client-core", version = "4.0.2" }
+cas-client-core = { module = "org.apereo.cas.client:cas-client-core", version = "4.0.3" }
 opensaml-core = { module = "org.opensaml:opensaml-core", version.ref = "opensaml" }
 opensaml-saml-api = { module = "org.opensaml:opensaml-saml-api", version.ref = "opensaml" }
 opensaml-saml-impl = { module = "org.opensaml:opensaml-saml-impl", version.ref = "opensaml" }
