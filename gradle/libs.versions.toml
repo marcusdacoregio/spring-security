@@ -50,7 +50,7 @@ bcprov-jdk15on = { module = "org.bouncycastle:bcprov-jdk15on", version = "1.70" 
 jetty-server = { module = "org.eclipse.jetty:jetty-server", version = "11.0.16" }
 jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version = "11.0.16" }
 hamcrest = { module = "org.hamcrest:hamcrest", version = "2.2" }
-hibernate-core = { module = "org.hibernate.orm:hibernate-core", version = "6.3.0.CR1" }
+hibernate-core = { module = "org.hibernate.orm:hibernate-core", version = "6.3.1.Final" }
 hsqldb = { module = "org.hsqldb:hsqldb", version = "2.7.2" }
 cas-client-core = { module = "org.apereo.cas.client:cas-client-core", version = "4.0.2" }
 opensaml-core = { module = "org.opensaml:opensaml-core", version.ref = "opensaml" }
