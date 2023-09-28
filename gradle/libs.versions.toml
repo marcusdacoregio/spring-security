@@ -77,7 +77,7 @@ saxon = { module = "net.sourceforge.saxon:saxon", version = "9.1.0.8" }
 snakeyaml = { module = "org.yaml:snakeyaml", version = "1.30" }
 gradle-nexus-publish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version = "1.1.0" }
 gretty = { module = "org.gretty:gretty", version = "4.0.3" }
-apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version = "2.4.5" }
+apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version = "2.4.6" }
 gradle-versions-plugin = { module = "com.github.ben-manes:gradle-versions-plugin", version = "0.38.0" }
 mustache-java-compiler = { module = "com.github.spullara.mustache.java:compiler", version = "0.9.4" }
 spring-javaformat-gradle-plugin = { module = "io.spring.javaformat:spring-javaformat-gradle-plugin", version = "0.0.15" }
