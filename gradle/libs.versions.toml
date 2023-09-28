@@ -81,7 +81,7 @@ gretty = { module = "org.gretty:gretty", version = "4.0.3" }
 apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version = "2.4.5" }
 gradle-versions-plugin = { module = "com.github.ben-manes:gradle-versions-plugin", version = "0.38.0" }
 mustache-java-compiler = { module = "com.github.spullara.mustache.java:compiler", version = "0.9.4" }
-spring-javaformat-gradle-plugin = { module = "io.spring.javaformat:spring-javaformat-gradle-plugin", version = "0.0.15" }
+spring-javaformat-gradle-plugin = { module = "io.spring.javaformat:spring-javaformat-gradle-plugin", version = "0.0.39" }
 nohttp-gradle = { module = "io.spring.nohttp:nohttp-gradle", version = "0.0.11" }
 gradle-ssh-plugin = { module = "org.hidetake:gradle-ssh-plugin", version = "2.10.1" }
 build-info-extractor-gradle = { module = "org.jfrog.buildinfo:build-info-extractor-gradle", version = "4.29.0" }
