@@ -16,10 +16,12 @@
 
 package org.springframework.security.web.concurrent;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,7 @@ import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.session.ConcurrentSessionFilter;
+import org.springframework.security.web.session.SessionInformationExpiredEvent;
 import org.springframework.security.web.session.SessionInformationExpiredStrategy;
 import org.springframework.security.web.session.SimpleRedirectSessionInformationExpiredStrategy;
 
@@ -290,6 +293,23 @@ public class ConcurrentSessionFilterTests {
 	}
 
 	@Test
+	public void doFilterWhenSessionExpiredAndStrategyContinuesFilterChainThenFilterChainContinues() throws Exception {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		MockHttpSession session = new MockHttpSession();
+		request.setSession(session);
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		FilterChain filterChain = mock();
+		SessionRegistry registry = mock(SessionRegistry.class);
+		SessionInformation information = new SessionInformation("user", "sessionId",
+				new Date(System.currentTimeMillis() - 1000));
+		information.expireNow();
+		given(registry.getSessionInformation(anyString())).willReturn(information);
+		ConcurrentSessionFilter filter = new ConcurrentSessionFilter(registry, new ContinueSessionInformationExpiredStrategy());
+		filter.doFilter(request, response, filterChain);
+		verify(filterChain).doFilter(request, response);
+	}
+
+	@Test
 	public void setLogoutHandlersWhenNullThenThrowsException() {
 		ConcurrentSessionFilter filter = new ConcurrentSessionFilter(new SessionRegistryImpl());
 		assertThatIllegalArgumentException().isThrownBy(() -> filter.setLogoutHandlers((List<LogoutHandler>) null));
@@ -299,6 +319,15 @@ public class ConcurrentSessionFilterTests {
 	public void setLogoutHandlersWhenEmptyThenThrowsException() {
 		ConcurrentSessionFilter filter = new ConcurrentSessionFilter(new SessionRegistryImpl());
 		assertThatIllegalArgumentException().isThrownBy(() -> filter.setLogoutHandlers(new LogoutHandler[0]));
+	}
+
+	static class ContinueSessionInformationExpiredStrategy implements SessionInformationExpiredStrategy {
+
+		@Override
+		public void onExpiredSessionDetected(SessionInformationExpiredEvent event) throws ServletException, IOException {
+			event.getFilterChain().doFilter(event.getRequest(), event.getResponse());
+		}
+
 	}
 
 }
