@@ -26,9 +26,9 @@ jobs:
   prerequisites:
     name: Pre-requisites for building
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'spring-projects/spring-security' }}
+#    if: ${{ github.repository == 'spring-projects/spring-security' }}
     outputs:
-      runjobs: ${{ steps.continue.outputs.runjobs }}
+      runjobs: "true"
       project_version: ${{ steps.continue.outputs.project_version }}
       samples_branch: ${{ steps.continue.outputs.samples_branch }}
     steps:
@@ -119,6 +119,31 @@ jobs:
           ./gradlew publishMavenJavaPublicationToLocalRepository
           ./gradlew cloneRepository -PrepositoryName="spring-projects/spring-security-samples" -Pref="$SAMPLES_BRANCH" -PcloneOutputDirectory="$SAMPLES_DIR"
           ./gradlew --project-dir "$SAMPLES_DIR" --init-script spring-security-ci.gradle -PlocalRepositoryPath="$LOCAL_REPOSITORY_PATH" -PspringSecurityVersion="$VERSION" :runAllTests
+  aot_smoke_tests:
+    name: Security AOT Smoke Tests
+    needs: [ prerequisites ]
+    runs-on: ubuntu-latest
+    if: needs.prerequisites.outputs.runjobs
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up gradle
+        uses: spring-io/spring-gradle-build-action@v1
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17'
+          distribution: 'graalvm-community'
+      - name: Run Security AOT Smoke Tests
+        env:
+          SMOKE_TESTS_DIR: ./build/tmp/aot-smoke-tests
+          VERSION: ${{ needs.prerequisites.outputs.project_version }}
+        run: |
+          export GRADLE_ENTERPRISE_CACHE_USERNAME="$GRADLE_ENTERPRISE_CACHE_USER"
+          export GRADLE_ENTERPRISE_CACHE_PASSWORD="$GRADLE_ENTERPRISE_CACHE_PASSWORD"
+          export GRADLE_ENTERPRISE_ACCESS_KEY="$GRADLE_ENTERPRISE_SECRET_ACCESS_KEY"
+          ./gradlew publishToMavenLocal
+          ./gradlew cloneRepository -PrepositoryName="marcusdacoregio/spring-aot-smoke-tests" -Pref="main" -PcloneOutputDirectory="$SMOKE_TESTS_DIR"
+          ./gradlew build -p "$SMOKE_TESTS_DIR/security" -PfromMavenLocal=org.springframework.security -PoverrideGroupVersion="org.springframework.security:$VERSION"
   check_tangles:
     name: Check for Package Tangles
     needs: [ prerequisites ]
