@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -680,36 +680,6 @@ class ServerHttpSecurityDsl(private val http: ServerHttpSecurity, private val in
     fun oidcLogout(oidcLogoutConfiguration: ServerOidcLogoutDsl.() -> Unit) {
         val oidcLogoutCustomizer = ServerOidcLogoutDsl().apply(oidcLogoutConfiguration).get()
         this.http.oidcLogout(oidcLogoutCustomizer)
-    }
-
-    /**
-     * Configures Session Management support.
-     *
-     * Example:
-     *
-     * ```
-     * @Configuration
-     * @EnableWebFluxSecurity
-     * open class SecurityConfig {
-     *
-     *  @Bean
-     *  open fun springWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
-     *      return http {
-     *          sessionManagement {
-     *              sessionConcurrency { }
-     *          }
-     *       }
-     *   }
-     * }
-     * ```
-     *
-     * @param sessionManagementConfig custom configuration to configure the Session Management
-     * @since 6.3
-     * @see [ServerSessionManagementDsl]
-     */
-    fun sessionManagement(sessionManagementConfig: ServerSessionManagementDsl.() -> Unit) {
-        val sessionManagementCustomizer = ServerSessionManagementDsl().apply(sessionManagementConfig).get()
-        this.http.sessionManagement(sessionManagementCustomizer)
     }
 
     /**
