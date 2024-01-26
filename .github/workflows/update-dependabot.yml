@@ -1,0 +1,34 @@
+name: Update dependabot.yml
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *' # Once per day at midnight UTC
+
+permissions:
+  contents: read
+
+jobs:
+
+  get-supported-branches:
+    uses: spring-io/spring-security-release-tools/.github/workflows/retrieve-spring-supported-versions.yml@d615a5694c761901330655fdd0e3721dc4ccf0fe
+
+  main:
+    runs-on: ubuntu-latest
+    needs: [get-supported-branches]
+    if: ${{ (github.repository == 'spring-projects/spring-security') && (github.ref == 'refs/heads/main') }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: marcusdacoregio/generate-dependabot-yml@f8a19a8af6de49c55bf677f42e5dcd799928bd2b
+        name: Update dependabot.yml
+        with:
+          branches: ${{ needs.get-supported-branches.outputs.supported_versions }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          # TODO we need to somehow pass `main` to both gradle and github-actions package-ecosystem, and `docs-build` to github-actions package-ecosystem
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Update dependabot.yml
