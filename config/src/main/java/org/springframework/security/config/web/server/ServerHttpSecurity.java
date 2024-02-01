@@ -125,11 +125,9 @@ import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.AnonymousAuthenticationWebFilter;
 import org.springframework.security.web.server.authentication.AuthenticationConverterServerWebExchangeMatcher;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
-import org.springframework.security.web.server.authentication.ConcurrentSessionControlServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.DelegatingServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.HttpBasicServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.authentication.HttpStatusServerEntryPoint;
-import org.springframework.security.web.server.authentication.InvalidateLeastUsedServerMaximumSessionsExceededHandler;
 import org.springframework.security.web.server.authentication.ReactivePreAuthenticatedAuthenticationManager;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationFailureHandler;
@@ -141,7 +139,6 @@ import org.springframework.security.web.server.authentication.ServerAuthenticati
 import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.ServerFormLoginAuthenticationConverter;
 import org.springframework.security.web.server.authentication.ServerHttpBasicAuthenticationConverter;
-import org.springframework.security.web.server.authentication.ServerMaximumSessionsExceededHandler;
 import org.springframework.security.web.server.authentication.ServerX509AuthenticationConverter;
 import org.springframework.security.web.server.authentication.SessionLimit;
 import org.springframework.security.web.server.authentication.WebFilterChainServerAuthenticationSuccessHandler;
@@ -1964,8 +1961,6 @@ public class ServerHttpSecurity {
 
 		private SessionLimit sessionLimit = SessionLimit.UNLIMITED;
 
-		private ServerMaximumSessionsExceededHandler maximumSessionsExceededHandler = new InvalidateLeastUsedServerMaximumSessionsExceededHandler();
-
 		/**
 		 * Configures how many sessions are allowed for a given user.
 		 * @param customizer the customizer to provide more options
@@ -1982,14 +1977,10 @@ public class ServerHttpSecurity {
 		void configure(ServerHttpSecurity http) {
 			if (this.concurrentSessions != null) {
 				ReactiveSessionRegistry reactiveSessionRegistry = getSessionRegistry();
-				ConcurrentSessionControlServerAuthenticationSuccessHandler concurrentSessionControlStrategy = new ConcurrentSessionControlServerAuthenticationSuccessHandler(
-						reactiveSessionRegistry);
-				concurrentSessionControlStrategy.setSessionLimit(this.sessionLimit);
-				concurrentSessionControlStrategy.setMaximumSessionsExceededHandler(this.maximumSessionsExceededHandler);
 				RegisterSessionServerAuthenticationSuccessHandler registerSessionAuthenticationStrategy = new RegisterSessionServerAuthenticationSuccessHandler(
 						reactiveSessionRegistry);
-				this.authenticationSuccessHandler = new DelegatingServerAuthenticationSuccessHandler(
-						concurrentSessionControlStrategy, registerSessionAuthenticationStrategy);
+				registerSessionAuthenticationStrategy.setSessionLimit(this.sessionLimit);
+				this.authenticationSuccessHandler = registerSessionAuthenticationStrategy;
 				SessionRegistryWebFilter sessionRegistryWebFilter = new SessionRegistryWebFilter(
 						reactiveSessionRegistry);
 				configureSuccessHandlerOnAuthenticationFilters();
@@ -2059,20 +2050,6 @@ public class ServerHttpSecurity {
 			public ConcurrentSessionsSpec maximumSessions(SessionLimit sessionLimit) {
 				Assert.notNull(sessionLimit, "sessionLimit cannot be null");
 				SessionManagementSpec.this.sessionLimit = sessionLimit;
-				return this;
-			}
-
-			/**
-			 * Sets the {@link ServerMaximumSessionsExceededHandler} to use when the
-			 * maximum number of sessions is exceeded.
-			 * @param maximumSessionsExceededHandler the
-			 * {@link ServerMaximumSessionsExceededHandler} to use
-			 * @return the {@link ConcurrentSessionsSpec} to continue customizing
-			 */
-			public ConcurrentSessionsSpec maximumSessionsExceededHandler(
-					ServerMaximumSessionsExceededHandler maximumSessionsExceededHandler) {
-				Assert.notNull(maximumSessionsExceededHandler, "maximumSessionsExceededHandler cannot be null");
-				SessionManagementSpec.this.maximumSessionsExceededHandler = maximumSessionsExceededHandler;
 				return this;
 			}
 

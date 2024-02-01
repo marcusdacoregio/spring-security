@@ -16,8 +16,12 @@
 
 package org.springframework.security.web.server.authentication;
 
+import java.util.List;
+
 import reactor.core.publisher.Mono;
 
+import org.springframework.security.core.session.ReactiveMaximumSessionsExceededHandler;
+import org.springframework.security.core.session.ReactiveSessionInformation;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 
 /**
@@ -27,13 +31,14 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
  * @author Marcus da Coregio
  * @since 6.3
  */
-public final class PreventLoginServerMaximumSessionsExceededHandler implements ServerMaximumSessionsExceededHandler {
+public final class PreventLoginReactiveMaximumSessionsExceededHandler
+		implements ReactiveMaximumSessionsExceededHandler {
 
 	@Override
-	public Mono<Void> handle(MaximumSessionsContext context) {
-		return Mono
-			.error(new SessionAuthenticationException("Maximum sessions of " + context.getMaximumSessionsAllowed()
-					+ " for authentication '" + context.getAuthentication().getName() + "' exceeded"));
+	public Mono<Void> handle(ReactiveSessionInformation currentSession,
+			List<ReactiveSessionInformation> registeredSessions) {
+		return Mono.error(new SessionAuthenticationException(
+				"Maximum sessions of " + currentSession.getMaxSessionsAllowed() + " for principal exceeded"));
 	}
 
 }

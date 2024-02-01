@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
 import org.springframework.security.authentication.TestAuthentication;
 import org.springframework.security.core.Authentication;
@@ -35,7 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class InMemoryReactiveSessionRegistryTests {
 
-	InMemoryReactiveSessionRegistry sessionRegistry = new InMemoryReactiveSessionRegistry();
+	InMemoryReactiveSessionRegistry sessionRegistry = new InMemoryReactiveSessionRegistry(
+			(sessionInformation, registeredSessions) -> Mono.empty());
 
 	Instant now = LocalDate.of(2023, 11, 21).atStartOfDay().toInstant(ZoneOffset.UTC);
 
@@ -85,7 +87,6 @@ class InMemoryReactiveSessionRegistryTests {
 			.collectList()
 			.block();
 		assertThat(this.sessionRegistry.getSessionInformation("1234").block()).isNull();
-		assertThat(sessions).isEmpty();
 	}
 
 	@Test

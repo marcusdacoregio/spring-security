@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,19 +32,20 @@ import reactor.core.publisher.Mono;
  * @author Marcus da Coregio
  * @since 6.3
  */
-public class InMemoryReactiveSessionRegistry implements ReactiveSessionRegistry {
+public final class InMemoryReactiveSessionRegistry extends AbstractConcurrencyControlReactivePrincipalSessionRegistry {
 
 	private final ConcurrentMap<Object, Set<String>> sessionIdsByPrincipal;
 
 	private final Map<String, ReactiveSessionInformation> sessionById;
 
-	public InMemoryReactiveSessionRegistry() {
-		this.sessionIdsByPrincipal = new ConcurrentHashMap<>();
-		this.sessionById = new ConcurrentHashMap<>();
+	public InMemoryReactiveSessionRegistry(ReactiveMaximumSessionsExceededHandler maximumSessionsExceededHandler) {
+		this(maximumSessionsExceededHandler, new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
 	}
 
-	public InMemoryReactiveSessionRegistry(ConcurrentMap<Object, Set<String>> sessionIdsByPrincipal,
+	public InMemoryReactiveSessionRegistry(ReactiveMaximumSessionsExceededHandler maximumSessionsExceededHandler,
+			ConcurrentMap<Object, Set<String>> sessionIdsByPrincipal,
 			Map<String, ReactiveSessionInformation> sessionById) {
+		super(maximumSessionsExceededHandler);
 		this.sessionIdsByPrincipal = sessionIdsByPrincipal;
 		this.sessionById = sessionById;
 	}
@@ -56,10 +57,11 @@ public class InMemoryReactiveSessionRegistry implements ReactiveSessionRegistry 
 	}
 
 	@Override
-	public Mono<Void> saveSessionInformation(ReactiveSessionInformation information) {
-		this.sessionById.put(information.getSessionId(), information);
-		this.sessionIdsByPrincipal.computeIfAbsent(information.getPrincipal(), (key) -> new CopyOnWriteArraySet<>())
-			.add(information.getSessionId());
+	protected Mono<Void> save(ReactiveSessionInformation sessionInformation) {
+		this.sessionById.put(sessionInformation.getSessionId(), sessionInformation);
+		this.sessionIdsByPrincipal
+			.computeIfAbsent(sessionInformation.getPrincipal(), (key) -> new CopyOnWriteArraySet<>())
+			.add(sessionInformation.getSessionId());
 		return Mono.empty();
 	}
 

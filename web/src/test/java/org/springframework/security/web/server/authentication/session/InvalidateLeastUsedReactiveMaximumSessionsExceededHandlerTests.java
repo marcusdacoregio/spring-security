@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,15 @@ package org.springframework.security.web.server.authentication.session;
 import java.time.Instant;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.session.ReactiveSessionInformation;
-import org.springframework.security.web.server.authentication.InvalidateLeastUsedServerMaximumSessionsExceededHandler;
-import org.springframework.security.web.server.authentication.MaximumSessionsContext;
+import org.springframework.security.web.server.authentication.InvalidateLeastUsedReactiveMaximumSessionsExceededHandler;
+import org.springframework.web.server.session.WebSessionStore;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -34,13 +35,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
- * Tests for {@link InvalidateLeastUsedServerMaximumSessionsExceededHandler}
+ * Tests for {@link InvalidateLeastUsedReactiveMaximumSessionsExceededHandler}
  *
  * @author Marcus da Coregio
  */
-class InvalidateLeastUsedServerMaximumSessionsExceededHandlerTests {
+class InvalidateLeastUsedReactiveMaximumSessionsExceededHandlerTests {
 
-	InvalidateLeastUsedServerMaximumSessionsExceededHandler handler = new InvalidateLeastUsedServerMaximumSessionsExceededHandler();
+	InvalidateLeastUsedReactiveMaximumSessionsExceededHandler handler;
+
+	WebSessionStore webSessionStore = mock();
+
+	@BeforeEach
+	void setup() {
+		this.handler = new InvalidateLeastUsedReactiveMaximumSessionsExceededHandler(this.webSessionStore);
+		given(this.webSessionStore.removeSession(any())).willReturn(Mono.empty());
+	}
 
 	@Test
 	void handleWhenInvokedThenInvalidatesLeastRecentlyUsedSessions() {
@@ -48,15 +57,22 @@ class InvalidateLeastUsedServerMaximumSessionsExceededHandlerTests {
 		ReactiveSessionInformation session2 = mock(ReactiveSessionInformation.class);
 		given(session1.getLastAccessTime()).willReturn(Instant.ofEpochMilli(1700827760010L));
 		given(session2.getLastAccessTime()).willReturn(Instant.ofEpochMilli(1700827760000L));
+		given(session2.getSessionId()).willReturn("session2");
 		given(session2.invalidate()).willReturn(Mono.empty());
-		MaximumSessionsContext context = new MaximumSessionsContext(mock(Authentication.class),
-				List.of(session1, session2), 2);
 
-		this.handler.handle(context).block();
+		ReactiveSessionInformation current = new ReactiveSessionInformation("principal", "1234",
+				Instant.ofEpochMilli(1700827760020L));
+		current.setMaxSessionsAllowed(2);
+
+		this.handler.handle(current, List.of(session1, session2)).block();
 
 		verify(session2).invalidate();
 		verify(session1).getLastAccessTime(); // used by comparator to sort the sessions
 		verify(session2).getLastAccessTime(); // used by comparator to sort the sessions
+		verify(session2).getSessionId(); // used to invalidate session against the
+											// WebSessionStore
+		verify(this.webSessionStore).removeSession("session2");
+		verifyNoMoreInteractions(this.webSessionStore);
 		verifyNoMoreInteractions(session2);
 		verifyNoMoreInteractions(session1);
 	}
@@ -71,17 +87,25 @@ class InvalidateLeastUsedServerMaximumSessionsExceededHandlerTests {
 		given(session3.getLastAccessTime()).willReturn(Instant.ofEpochMilli(1700827760030L));
 		given(session1.invalidate()).willReturn(Mono.empty());
 		given(session2.invalidate()).willReturn(Mono.empty());
-		MaximumSessionsContext context = new MaximumSessionsContext(mock(Authentication.class),
-				List.of(session1, session2, session3), 2);
+		given(session1.getSessionId()).willReturn("session1");
+		given(session2.getSessionId()).willReturn("session2");
 
-		this.handler.handle(context).block();
+		ReactiveSessionInformation current = new ReactiveSessionInformation("principal", "1234",
+				Instant.ofEpochMilli(1700827760040L));
+		current.setMaxSessionsAllowed(2);
+		this.handler.handle(current, List.of(session1, session2, session3)).block();
 
 		// @formatter:off
 		verify(session1).invalidate();
 		verify(session2).invalidate();
+		verify(session1).getSessionId();
+		verify(session2).getSessionId();
 		verify(session1, atLeastOnce()).getLastAccessTime(); // used by comparator to sort the sessions
 		verify(session2, atLeastOnce()).getLastAccessTime(); // used by comparator to sort the sessions
 		verify(session3, atLeastOnce()).getLastAccessTime(); // used by comparator to sort the sessions
+		verify(this.webSessionStore).removeSession("session1");
+		verify(this.webSessionStore).removeSession("session2");
+		verifyNoMoreInteractions(this.webSessionStore);
 		verifyNoMoreInteractions(session1);
 		verifyNoMoreInteractions(session2);
 		verifyNoMoreInteractions(session3);

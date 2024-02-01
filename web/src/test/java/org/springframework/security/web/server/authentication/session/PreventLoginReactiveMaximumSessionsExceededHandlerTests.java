@@ -16,32 +16,33 @@
 
 package org.springframework.security.web.server.authentication.session;
 
+import java.time.Instant;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.security.authentication.TestAuthentication;
+import org.springframework.security.core.session.ReactiveSessionInformation;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
-import org.springframework.security.web.server.authentication.MaximumSessionsContext;
-import org.springframework.security.web.server.authentication.PreventLoginServerMaximumSessionsExceededHandler;
+import org.springframework.security.web.server.authentication.PreventLoginReactiveMaximumSessionsExceededHandler;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
- * Tests for {@link PreventLoginServerMaximumSessionsExceededHandler}.
+ * Tests for {@link PreventLoginReactiveMaximumSessionsExceededHandler}.
  *
  * @author Marcus da Coregio
  */
-class PreventLoginServerMaximumSessionsExceededHandlerTests {
+class PreventLoginReactiveMaximumSessionsExceededHandlerTests {
 
 	@Test
 	void handleWhenInvokedThenThrowsSessionAuthenticationException() {
-		PreventLoginServerMaximumSessionsExceededHandler handler = new PreventLoginServerMaximumSessionsExceededHandler();
-		MaximumSessionsContext context = new MaximumSessionsContext(TestAuthentication.authenticatedUser(),
-				Collections.emptyList(), 1);
+		PreventLoginReactiveMaximumSessionsExceededHandler handler = new PreventLoginReactiveMaximumSessionsExceededHandler();
+		ReactiveSessionInformation sessionInformation = new ReactiveSessionInformation("principal", "1234",
+				Instant.now());
+		sessionInformation.setMaxSessionsAllowed(3);
 		assertThatExceptionOfType(SessionAuthenticationException.class)
-			.isThrownBy(() -> handler.handle(context).block())
-			.withMessage("Maximum sessions of 1 for authentication 'user' exceeded");
+			.isThrownBy(() -> handler.handle(sessionInformation, Collections.emptyList()).block())
+			.withMessage("Maximum sessions of 3 for principal exceeded");
 	}
 
 }

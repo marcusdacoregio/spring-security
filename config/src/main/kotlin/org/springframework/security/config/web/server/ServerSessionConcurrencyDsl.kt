@@ -17,7 +17,6 @@
 package org.springframework.security.config.web.server
 
 import org.springframework.security.core.session.ReactiveSessionRegistry
-import org.springframework.security.web.server.authentication.ServerMaximumSessionsExceededHandler
 import org.springframework.security.web.server.authentication.SessionLimit
 
 /**
@@ -29,16 +28,12 @@ import org.springframework.security.web.server.authentication.SessionLimit
 @ServerSecurityMarker
 class ServerSessionConcurrencyDsl {
     var maximumSessions: SessionLimit? = null
-    var maximumSessionsExceededHandler: ServerMaximumSessionsExceededHandler? = null
     var sessionRegistry: ReactiveSessionRegistry? = null
 
     internal fun get(): (ServerHttpSecurity.SessionManagementSpec.ConcurrentSessionsSpec) -> Unit {
         return { sessionConcurrency ->
             maximumSessions?.also {
                 sessionConcurrency.maximumSessions(maximumSessions!!)
-            }
-            maximumSessionsExceededHandler?.also {
-                sessionConcurrency.maximumSessionsExceededHandler(maximumSessionsExceededHandler!!)
             }
             sessionRegistry?.also {
                 sessionConcurrency.sessionRegistry(sessionRegistry!!)

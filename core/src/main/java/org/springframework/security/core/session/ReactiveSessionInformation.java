@@ -38,6 +38,8 @@ public class ReactiveSessionInformation implements Serializable {
 
 	private boolean expired = false;
 
+	private Integer maxSessionsAllowed;
+
 	public ReactiveSessionInformation(Object principal, String sessionId, Instant lastAccessTime) {
 		Assert.notNull(principal, "principal cannot be null");
 		Assert.hasText(sessionId, "sessionId cannot be null");
@@ -78,6 +80,14 @@ public class ReactiveSessionInformation implements Serializable {
 
 	public void setLastAccessTime(Instant lastAccessTime) {
 		this.lastAccessTime = lastAccessTime;
+	}
+
+	public Integer getMaxSessionsAllowed() {
+		return this.maxSessionsAllowed;
+	}
+
+	public void setMaxSessionsAllowed(Integer maxSessionsAllowed) {
+		this.maxSessionsAllowed = maxSessionsAllowed;
 	}
 
 }

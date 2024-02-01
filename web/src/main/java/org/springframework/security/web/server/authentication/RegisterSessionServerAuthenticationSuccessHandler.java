@@ -23,6 +23,7 @@ import org.springframework.security.core.session.ReactiveSessionInformation;
 import org.springframework.security.core.session.ReactiveSessionRegistry;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.util.Assert;
+import org.springframework.web.server.WebSession;
 
 /**
  * An implementation of {@link ServerAuthenticationSuccessHandler} that will register a
@@ -35,6 +36,8 @@ public final class RegisterSessionServerAuthenticationSuccessHandler implements 
 
 	private final ReactiveSessionRegistry sessionRegistry;
 
+	private SessionLimit sessionLimit = SessionLimit.UNLIMITED;
+
 	public RegisterSessionServerAuthenticationSuccessHandler(ReactiveSessionRegistry sessionRegistry) {
 		Assert.notNull(sessionRegistry, "sessionRegistry cannot be null");
 		this.sessionRegistry = sessionRegistry;
@@ -44,9 +47,27 @@ public final class RegisterSessionServerAuthenticationSuccessHandler implements 
 	public Mono<Void> onAuthenticationSuccess(WebFilterExchange exchange, Authentication authentication) {
 		return exchange.getExchange()
 			.getSession()
-			.map((session) -> new ReactiveSessionInformation(authentication.getPrincipal(), session.getId(),
-					session.getLastAccessTime()))
+			.flatMap((session) -> createSessionInformation(session, authentication))
 			.flatMap(this.sessionRegistry::saveSessionInformation);
+	}
+
+	private Mono<ReactiveSessionInformation> createSessionInformation(WebSession session,
+			Authentication authentication) {
+		ReactiveSessionInformation sessionInformation = new ReactiveSessionInformation(authentication.getPrincipal(),
+				session.getId(), session.getLastAccessTime());
+		return this.sessionLimit.apply(authentication)
+			.doOnNext(sessionInformation::setMaxSessionsAllowed)
+			.thenReturn(sessionInformation);
+	}
+
+	/**
+	 * Sets the {@link SessionLimit} to be used when registering a session. Defaults to
+	 * {@link SessionLimit#UNLIMITED}.
+	 * @param sessionLimit the {@link SessionLimit} to use
+	 */
+	public void setSessionLimit(SessionLimit sessionLimit) {
+		Assert.notNull(sessionLimit, "sessionLimit cannot be null");
+		this.sessionLimit = sessionLimit;
 	}
 
 }

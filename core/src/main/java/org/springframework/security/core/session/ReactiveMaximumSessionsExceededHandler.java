@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.security.web.server.authentication;
+package org.springframework.security.core.session;
+
+import java.util.List;
 
 import reactor.core.publisher.Mono;
 
@@ -25,14 +27,15 @@ import reactor.core.publisher.Mono;
  * @author Marcus da Coregio
  * @since 6.3
  */
-public interface ServerMaximumSessionsExceededHandler {
+public interface ReactiveMaximumSessionsExceededHandler {
 
 	/**
 	 * Handles the scenario when the maximum number of sessions for a user has been
 	 * reached.
-	 * @param context the context with information about the sessions and the user
+	 * @param currentSession the current {@link ReactiveSessionInformation}
+	 * @param registeredSessions all the principal's registered sessions
 	 * @return an empty {@link Mono} that completes when the handling is done
 	 */
-	Mono<Void> handle(MaximumSessionsContext context);
+	Mono<Void> handle(ReactiveSessionInformation currentSession, List<ReactiveSessionInformation> registeredSessions);
 
 }

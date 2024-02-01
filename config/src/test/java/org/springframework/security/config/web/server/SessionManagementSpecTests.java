@@ -34,9 +34,8 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.test.SpringTestContext;
 import org.springframework.security.config.test.SpringTestContextExtension;
 import org.springframework.security.config.users.ReactiveAuthenticationTestConfiguration;
-import org.springframework.security.core.session.ReactiveSessionInformation;
+import org.springframework.security.core.session.InMemoryReactiveSessionRegistry;
 import org.springframework.security.core.session.ReactiveSessionRegistry;
-import org.springframework.security.core.userdetails.PasswordEncodedUser;
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationToken;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.TestClientRegistrations;
@@ -48,14 +47,12 @@ import org.springframework.security.oauth2.core.endpoint.TestOAuth2Authorization
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.core.user.TestOAuth2Users;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.authentication.InvalidateLeastUsedServerMaximumSessionsExceededHandler;
-import org.springframework.security.web.server.authentication.PreventLoginServerMaximumSessionsExceededHandler;
+import org.springframework.security.web.server.authentication.InvalidateLeastUsedReactiveMaximumSessionsExceededHandler;
+import org.springframework.security.web.server.authentication.PreventLoginReactiveMaximumSessionsExceededHandler;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
-import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.SessionLimit;
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
-import org.springframework.security.web.session.WebSessionStoreReactiveSessionRegistry;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.util.LinkedMultiValueMap;
@@ -86,7 +83,8 @@ public class SessionManagementSpecTests {
 
 	@Test
 	void loginWhenMaxSessionPreventsLoginThenSecondLoginFails() {
-		this.spring.register(ConcurrentSessionsMaxSessionPreventsLoginConfig.class).autowire();
+		this.spring.register(PreventLoginConfig.class, ConcurrentSessionsMaxSessionPreventsLoginConfig.class)
+			.autowire();
 
 		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
 		data.add("username", "user");
@@ -116,7 +114,10 @@ public class SessionManagementSpecTests {
 
 	@Test
 	void httpBasicWhenUsingSavingAuthenticationInWebSessionAndPreventLoginThenSecondRequestFails() {
-		this.spring.register(ConcurrentSessionsHttpBasicWithWebSessionMaxSessionPreventsLoginConfig.class).autowire();
+		this.spring
+			.register(PreventLoginConfig.class,
+					ConcurrentSessionsHttpBasicWithWebSessionMaxSessionPreventsLoginConfig.class)
+			.autowire();
 
 		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
 		data.add("username", "user");
@@ -161,7 +162,8 @@ public class SessionManagementSpecTests {
 			}
 			return Mono.just(1);
 		};
-		this.spring.register(ConcurrentSessionsMaxSessionPreventsLoginConfig.class).autowire();
+		this.spring.register(PreventLoginConfig.class, ConcurrentSessionsMaxSessionPreventsLoginConfig.class)
+			.autowire();
 
 		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
 		data.add("username", "user");
@@ -209,7 +211,8 @@ public class SessionManagementSpecTests {
 	@Test
 	void loginWhenMaxSessionDoesNotPreventLoginThenSecondLoginSucceedsAndFirstSessionIsInvalidated() {
 		ConcurrentSessionsMaxSessionPreventsLoginFalseConfig.sessionLimit = SessionLimit.of(1);
-		this.spring.register(ConcurrentSessionsMaxSessionPreventsLoginFalseConfig.class).autowire();
+		this.spring.register(InvalidateConfig.class, ConcurrentSessionsMaxSessionPreventsLoginFalseConfig.class)
+			.autowire();
 
 		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
 		data.add("username", "user");
@@ -240,7 +243,8 @@ public class SessionManagementSpecTests {
 	@Test
 	void loginWhenMaxSessionDoesNotPreventLoginThenLeastRecentlyUsedSessionIsInvalidated() {
 		ConcurrentSessionsMaxSessionPreventsLoginFalseConfig.sessionLimit = SessionLimit.of(2);
-		this.spring.register(ConcurrentSessionsMaxSessionPreventsLoginFalseConfig.class).autowire();
+		this.spring.register(InvalidateConfig.class, ConcurrentSessionsMaxSessionPreventsLoginFalseConfig.class)
+			.autowire();
 
 		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
 		data.add("username", "user");
@@ -289,8 +293,7 @@ public class SessionManagementSpecTests {
 	@Test
 	void oauth2LoginWhenMaxSessionsThenPreventLogin() {
 		OAuth2LoginConcurrentSessionsConfig.maxSessions = 1;
-		OAuth2LoginConcurrentSessionsConfig.preventLogin = true;
-		this.spring.register(OAuth2LoginConcurrentSessionsConfig.class).autowire();
+		this.spring.register(PreventLoginConfig.class, OAuth2LoginConcurrentSessionsConfig.class).autowire();
 		prepareOAuth2Config();
 		// @formatter:off
 		ResponseCookie sessionCookie = this.client.get()
@@ -317,49 +320,9 @@ public class SessionManagementSpecTests {
 	}
 
 	@Test
-	void loginWhenUnlimitedSessionsButSessionsInvalidatedManuallyThenInvalidates() {
-		ConcurrentSessionsMaxSessionPreventsLoginFalseConfig.sessionLimit = SessionLimit.UNLIMITED;
-		this.spring.register(ConcurrentSessionsMaxSessionPreventsLoginFalseConfig.class).autowire();
-		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
-		data.add("username", "user");
-		data.add("password", "password");
-
-		ResponseCookie firstLogin = loginReturningCookie(data);
-		ResponseCookie secondLogin = loginReturningCookie(data);
-		this.client.get().uri("/").cookie(firstLogin.getName(), firstLogin.getValue()).exchange().expectStatus().isOk();
-		this.client.get()
-			.uri("/")
-			.cookie(secondLogin.getName(), secondLogin.getValue())
-			.exchange()
-			.expectStatus()
-			.isOk();
-		ReactiveSessionRegistry sessionRegistry = this.spring.getContext().getBean(ReactiveSessionRegistry.class);
-		sessionRegistry.getAllSessions(PasswordEncodedUser.user())
-			.flatMap(ReactiveSessionInformation::invalidate)
-			.blockLast();
-		this.client.get()
-			.uri("/")
-			.cookie(firstLogin.getName(), firstLogin.getValue())
-			.exchange()
-			.expectStatus()
-			.isFound()
-			.expectHeader()
-			.location("/login");
-		this.client.get()
-			.uri("/")
-			.cookie(secondLogin.getName(), secondLogin.getValue())
-			.exchange()
-			.expectStatus()
-			.isFound()
-			.expectHeader()
-			.location("/login");
-	}
-
-	@Test
 	void oauth2LoginWhenMaxSessionDoesNotPreventLoginThenSecondLoginSucceedsAndFirstSessionIsInvalidated() {
 		OAuth2LoginConcurrentSessionsConfig.maxSessions = 1;
-		OAuth2LoginConcurrentSessionsConfig.preventLogin = false;
-		this.spring.register(OAuth2LoginConcurrentSessionsConfig.class).autowire();
+		this.spring.register(InvalidateConfig.class, OAuth2LoginConcurrentSessionsConfig.class).autowire();
 		prepareOAuth2Config();
 		// @formatter:off
 		ResponseCookie firstLoginCookie = this.client.get()
@@ -397,7 +360,10 @@ public class SessionManagementSpecTests {
 
 	@Test
 	void loginWhenAuthenticationSuccessHandlerOverriddenThenConcurrentSessionHandlersBackOff() {
-		this.spring.register(ConcurrentSessionsFormLoginOverrideAuthenticationSuccessHandlerConfig.class).autowire();
+		this.spring
+			.register(InvalidateConfig.class,
+					ConcurrentSessionsFormLoginOverrideAuthenticationSuccessHandlerConfig.class)
+			.autowire();
 		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
 		data.add("username", "user");
 		data.add("password", "password");
@@ -445,7 +411,6 @@ public class SessionManagementSpecTests {
 	@Configuration
 	@EnableWebFlux
 	@EnableWebFluxSecurity
-	@Import(Config.class)
 	static class ConcurrentSessionsMaxSessionPreventsLoginConfig {
 
 		static SessionLimit sessionLimit = SessionLimit.of(1);
@@ -459,7 +424,6 @@ public class SessionManagementSpecTests {
 				.sessionManagement((sessionManagement) -> sessionManagement
 					.concurrentSessions((concurrentSessions) -> concurrentSessions
 						.maximumSessions(sessionLimit)
-						.maximumSessionsExceededHandler(new PreventLoginServerMaximumSessionsExceededHandler())
 					)
 				);
 			// @formatter:on
@@ -471,7 +435,6 @@ public class SessionManagementSpecTests {
 	@Configuration
 	@EnableWebFlux
 	@EnableWebFluxSecurity
-	@Import(Config.class)
 	static class OAuth2LoginConcurrentSessionsConfig {
 
 		static int maxSessions = 1;
@@ -483,8 +446,6 @@ public class SessionManagementSpecTests {
 		ServerAuthenticationConverter authenticationConverter = mock(ServerAuthenticationConverter.class);
 
 		ServerOAuth2AuthorizationRequestResolver resolver = mock(ServerOAuth2AuthorizationRequestResolver.class);
-
-		ServerAuthenticationSuccessHandler successHandler = mock(ServerAuthenticationSuccessHandler.class);
 
 		@Bean
 		SecurityWebFilterChain springSecurityFilter(ServerHttpSecurity http) {
@@ -501,9 +462,6 @@ public class SessionManagementSpecTests {
 					.sessionManagement((sessionManagement) -> sessionManagement
 						.concurrentSessions((concurrentSessions) -> concurrentSessions
 								.maximumSessions(SessionLimit.of(maxSessions))
-								.maximumSessionsExceededHandler(preventLogin
-										? new PreventLoginServerMaximumSessionsExceededHandler()
-										: new InvalidateLeastUsedServerMaximumSessionsExceededHandler())
 						)
 					);
 			// @formatter:on
@@ -521,7 +479,6 @@ public class SessionManagementSpecTests {
 	@Configuration
 	@EnableWebFlux
 	@EnableWebFluxSecurity
-	@Import(Config.class)
 	static class ConcurrentSessionsMaxSessionPreventsLoginFalseConfig {
 
 		static SessionLimit sessionLimit = SessionLimit.of(1);
@@ -546,7 +503,6 @@ public class SessionManagementSpecTests {
 	@Configuration
 	@EnableWebFlux
 	@EnableWebFluxSecurity
-	@Import(Config.class)
 	static class ConcurrentSessionsFormLoginOverrideAuthenticationSuccessHandlerConfig {
 
 		@Bean
@@ -560,7 +516,6 @@ public class SessionManagementSpecTests {
 				.sessionManagement((sessionManagement) -> sessionManagement
 					.concurrentSessions((concurrentSessions) -> concurrentSessions
 						.maximumSessions(SessionLimit.of(1))
-						.maximumSessionsExceededHandler(new PreventLoginServerMaximumSessionsExceededHandler())
 					)
 				);
 			// @formatter:on
@@ -572,7 +527,6 @@ public class SessionManagementSpecTests {
 	@Configuration
 	@EnableWebFlux
 	@EnableWebFluxSecurity
-	@Import(Config.class)
 	static class ConcurrentSessionsHttpBasicWithWebSessionMaxSessionPreventsLoginConfig {
 
 		@Bean
@@ -586,7 +540,6 @@ public class SessionManagementSpecTests {
 					.sessionManagement((sessionManagement) -> sessionManagement
 							.concurrentSessions((concurrentSessions) -> concurrentSessions
 									.maximumSessions(SessionLimit.of(1))
-									.maximumSessionsExceededHandler(new PreventLoginServerMaximumSessionsExceededHandler())
 							)
 					);
 			// @formatter:on
@@ -597,7 +550,7 @@ public class SessionManagementSpecTests {
 
 	@Configuration
 	@Import({ ReactiveAuthenticationTestConfiguration.class, DefaultController.class })
-	static class Config {
+	static class InvalidateConfig {
 
 		@Bean(WebHttpHandlerBuilder.WEB_SESSION_MANAGER_BEAN_NAME)
 		DefaultWebSessionManager webSessionManager() {
@@ -606,7 +559,26 @@ public class SessionManagementSpecTests {
 
 		@Bean
 		ReactiveSessionRegistry reactiveSessionRegistry(DefaultWebSessionManager webSessionManager) {
-			return new WebSessionStoreReactiveSessionRegistry(webSessionManager.getSessionStore());
+			InvalidateLeastUsedReactiveMaximumSessionsExceededHandler maximumSessionsExceededHandler = new InvalidateLeastUsedReactiveMaximumSessionsExceededHandler(
+					webSessionManager.getSessionStore());
+			return new InMemoryReactiveSessionRegistry(maximumSessionsExceededHandler);
+		}
+
+	}
+
+	@Configuration
+	@Import({ ReactiveAuthenticationTestConfiguration.class, DefaultController.class })
+	static class PreventLoginConfig {
+
+		@Bean(WebHttpHandlerBuilder.WEB_SESSION_MANAGER_BEAN_NAME)
+		DefaultWebSessionManager webSessionManager() {
+			return new DefaultWebSessionManager();
+		}
+
+		@Bean
+		ReactiveSessionRegistry reactiveSessionRegistry() {
+			PreventLoginReactiveMaximumSessionsExceededHandler maximumSessionsExceededHandler = new PreventLoginReactiveMaximumSessionsExceededHandler();
+			return new InMemoryReactiveSessionRegistry(maximumSessionsExceededHandler);
 		}
 
 	}

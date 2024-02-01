@@ -4,7 +4,7 @@
 Similar to xref:servlet/authentication/session-management.adoc#ns-concurrent-sessions[Servlet's Concurrent Sessions Control], Spring Security also provides support to limit the number of concurrent sessions a user can have in a Reactive application.
 
 When you set up Concurrent Sessions Control in Spring Security, it monitors authentications carried out through Form Login, xref:reactive/oauth2/login/index.adoc[OAuth 2.0 Login], and HTTP Basic authentication by hooking into the way those authentication mechanisms handle authentication success.
-More specifically, the session management DSL will add the {security-api-url}org/springframework/security/web/server/authentication/ConcurrentSessionControlServerAuthenticationSuccessHandler.html[ConcurrentSessionControlServerAuthenticationSuccessHandler] and the {security-api-url}org/springframework/security/web/server/authentication/RegisterSessionServerAuthenticationSuccessHandler.html[RegisterSessionServerAuthenticationSuccessHandler] to the list of `ServerAuthenticationSuccessHandler` used by the authentication filter.
+More specifically, the session management DSL will add the {security-api-url}org/springframework/security/web/server/authentication/RegisterSessionServerAuthenticationSuccessHandler.html[RegisterSessionServerAuthenticationSuccessHandler] to the list of `ServerAuthenticationSuccessHandler` used by the authentication filter.
 
 The following sections contains examples of how to configure Concurrent Sessions Control.
 
@@ -33,14 +33,15 @@ SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
         // ...
         .sessionManagement((sessions) -> sessions
             .concurrentSessions((concurrency) -> concurrency
-                .maximumSessions(SessionLimit.of(1))
+                .maximumSessions(SessionLimit.of(1)))
         );
     return http.build();
 }
 
 @Bean
-ReactiveSessionRegistry reactiveSessionRegistry(WebSessionManager webSessionManager) {
-    return new WebSessionStoreReactiveSessionRegistry(((DefaultWebSessionManager) webSessionManager).getSessionStore());
+ReactiveSessionRegistry reactiveSessionRegistry() {
+    ReactiveMaximumSessionsExceededHandler handler = new PreventLoginReactiveMaximumSessionsExceededHandler();
+    return new InMemoryReactiveSessionRegistry(handler);
 }
 ----
 
@@ -59,9 +60,11 @@ open fun springSecurity(http: ServerHttpSecurity): SecurityWebFilterChain {
         }
     }
 }
+
 @Bean
-open fun reactiveSessionRegistry(webSessionManager: WebSessionManager): ReactiveSessionRegistry {
-    return WebSessionStoreReactiveSessionRegistry((webSessionManager as DefaultWebSessionManager).sessionStore)
+open fun reactiveSessionRegistry(): ReactiveSessionRegistry {
+    val handler = PreventLoginReactiveMaximumSessionsExceededHandler()
+    return InMemoryReactiveSessionRegistry(handler)
 }
 ----
 ======
@@ -88,8 +91,9 @@ SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
 }
 
 @Bean
-ReactiveSessionRegistry reactiveSessionRegistry(WebSessionManager webSessionManager) {
-    return new WebSessionStoreReactiveSessionRegistry(((DefaultWebSessionManager) webSessionManager).getSessionStore());
+ReactiveSessionRegistry reactiveSessionRegistry() {
+    ReactiveMaximumSessionsExceededHandler handler = new PreventLoginReactiveMaximumSessionsExceededHandler();
+    return new InMemoryReactiveSessionRegistry(handler);
 }
 ----
 
@@ -108,9 +112,11 @@ open fun springSecurity(http: ServerHttpSecurity): SecurityWebFilterChain {
         }
     }
 }
+
 @Bean
-open fun reactiveSessionRegistry(webSessionManager: WebSessionManager): ReactiveSessionRegistry {
-    return WebSessionStoreReactiveSessionRegistry((webSessionManager as DefaultWebSessionManager).sessionStore)
+open fun reactiveSessionRegistry(): ReactiveSessionRegistry {
+    val handler = PreventLoginReactiveMaximumSessionsExceededHandler()
+    return InMemoryReactiveSessionRegistry(handler)
 }
 ----
 ======
@@ -148,8 +154,9 @@ private SessionLimit maxSessions() {
 }
 
 @Bean
-ReactiveSessionRegistry reactiveSessionRegistry(WebSessionManager webSessionManager) {
-    return new WebSessionStoreReactiveSessionRegistry(((DefaultWebSessionManager) webSessionManager).getSessionStore());
+ReactiveSessionRegistry reactiveSessionRegistry() {
+    ReactiveMaximumSessionsExceededHandler handler = new PreventLoginReactiveMaximumSessionsExceededHandler();
+    return new InMemoryReactiveSessionRegistry(handler);
 }
 ----
 
@@ -178,21 +185,26 @@ fun maxSessions(): SessionLimit {
 }
 
 @Bean
-open fun reactiveSessionRegistry(webSessionManager: WebSessionManager): ReactiveSessionRegistry {
-    return WebSessionStoreReactiveSessionRegistry((webSessionManager as DefaultWebSessionManager).sessionStore)
+open fun reactiveSessionRegistry(webSessionManager: DefaultWebSessionManager): ReactiveSessionRegistry {
+    val handler = PreventLoginReactiveMaximumSessionsExceededHandler()
+    return InMemoryReactiveSessionRegistry(handler)
 }
 ----
 ======
 
-When the maximum number of sessions is exceeded, by default, the least recently used session(s) will be expired.
-If you want to change that behavior, you can <<concurrent-sessions-control-custom-strategy,customize the strategy used when the maximum number of sessions is exceeded>>.
+With the above configurations you configured the maximum number of sessions a user can have based on their authentication.
+Let's go ahead to the next section to see how to <<concurrent-sessions-control-custom-strategy,customize the strategy used when the maximum number of sessions is exceeded>>.
 
 [[concurrent-sessions-control-custom-strategy]]
 == Handling Maximum Number of Sessions Exceeded
 
-By default, when the maximum number of sessions is exceeded, the least recently used session(s) will be expired by using the {security-api-url}org/springframework/security/web/server/authentication/session/InvalidateLeastUsedMaximumSessionsExceededHandler.html[InvalidateLeastUsedMaximumSessionsExceededHandler].
-Spring Security also provides another implementation that prevents the user from creating new sessions by using the {security-api-url}org/springframework/security/web/server/authentication/session/PreventLoginMaximumSessionsExceededHandler.html[PreventLoginMaximumSessionsExceededHandler].
-If you want to use your own strategy, you can provide a different implementation of {security-api-url}org/springframework/security/web/server/authentication/session/ServerMaximumSessionsExceededHandler.html[ServerMaximumSessionsExceededHandler].
+In the <<reactive-concurrent-sessions-control-limit,examples above>>, we configured the `InMemoryReactiveSessionRegistry` bean by passing a `ReactiveMaximumSessionsExceededHandler` to its constructor.
+The `InMemoryReactiveSessionRegistry`, extends the `AbstractConcurrencyControlReactivePrincipalSessionRegistry` which is an abstract implementation of `ReactiveSessionRegistry` that checks the maximum number of sessions allowed when a `ReactiveSessionInformation` is saved.
+If the maximum number of sessions is exceeded, the `ReactiveMaximumSessionsExceededHandler` is called.
+
+Spring Security provides two implementations of `ReactiveMaximumSessionsExceededHandler` that you can use to handle when the maximum number of sessions exceeds, those are the {security-api-url}org/springframework/security/web/server/authentication/InvalidateLeastUsedReactiveMaximumSessionsExceededHandler.html[InvalidateLeastUsedReactiveMaximumSessionsExceededHandler] and {security-api-url}org/springframework/security/web/server/authentication/PreventLoginReactiveMaximumSessionsExceededHandler.html[PreventLoginReactiveMaximumSessionsExceededHandler].
+However, you are not limited to those implementations, you can always provide your own by creating a class that implements `ReactiveMaximumSessionsExceededHandler`.
+The `InvalidateLeastUsedReactiveMaximumSessionsExceededHandler` will invalidate the least recently used sessions against the `WebSessionStore`, while the `PreventLoginReactiveMaximumSessionsExceededHandler` will prevent the user from logging in.
 
 .Configuring maximumSessionsExceededHandler
 [tabs]
@@ -208,7 +220,6 @@ SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
         .sessionManagement((sessions) -> sessions
             .concurrentSessions((concurrency) -> concurrency
                 .maximumSessions(SessionLimit.of(1))
-                .maximumSessionsExceededHandler(new PreventLoginMaximumSessionsExceededHandler())
             )
         );
     return http.build();
@@ -216,7 +227,9 @@ SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
 
 @Bean
 ReactiveSessionRegistry reactiveSessionRegistry(WebSessionManager webSessionManager) {
-    return new WebSessionStoreReactiveSessionRegistry(((DefaultWebSessionManager) webSessionManager).getSessionStore());
+    WebSessionStore sessionStore = ((DefaultWebSessionManager) webSessionManager).getSessionStore();
+    ReactiveMaximumSessionsExceededHandler handler = new InvalidateLeastUsedReactiveMaximumSessionsExceededHandler(sessionStore);
+    return new InMemoryReactiveSessionRegistry(handler);
 }
 ----
 
@@ -231,7 +244,6 @@ open fun springSecurity(http: ServerHttpSecurity): SecurityWebFilterChain {
         sessionManagement {
             sessionConcurrency {
                 maximumSessions = SessionLimit.of(1)
-                maximumSessionsExceededHandler = PreventLoginMaximumSessionsExceededHandler()
             }
         }
     }
@@ -239,24 +251,26 @@ open fun springSecurity(http: ServerHttpSecurity): SecurityWebFilterChain {
 
 @Bean
 open fun reactiveSessionRegistry(webSessionManager: WebSessionManager): ReactiveSessionRegistry {
-    return WebSessionStoreReactiveSessionRegistry((webSessionManager as DefaultWebSessionManager).sessionStore)
+    val sessionStore = (webSessionManager as DefaultWebSessionManager).sessionStore
+    val handler = InvalidateLeastUsedReactiveMaximumSessionsExceededHandler(sessionStore)
+    return InMemoryReactiveSessionRegistry(handler)
 }
 ----
 ======
+
+[NOTE]
+====
+When creating the `InvalidateLeastUsedReactiveMaximumSessionsExceededHandler`, you need to provide the `WebSessionStore` that is being used by your application.
+If you are using Spring WebFlux, you can use the `WebSessionManager` bean (which is usually an instance of `DefaultWebSessionManager`) to get the `WebSessionStore`.
+====
 
 [[reactive-concurrent-sessions-control-specify-session-registry]]
 == Specifying a `ReactiveSessionRegistry`
 
 In order to keep track of the user's sessions, Spring Security uses a {security-api-url}org/springframework/security/core/session/ReactiveSessionRegistry.html[ReactiveSessionRegistry], and, every time a user logs in, their session information is saved.
-Typically, in a Spring WebFlux application, you will use the {security-api-url}/org/springframework/security/web/session/WebSessionStoreReactiveSessionRegistry.html[WebSessionStoreReactiveSessionRegistry] which makes sure that the `WebSession` is invalidated whenever the `ReactiveSessionInformation` is invalidated.
+There is also the {security-api-url}org/springframework/security/core/session/AbstractConcurrencyControlReactivePrincipalSessionRegistry.html[AbstractConcurrencyControlReactivePrincipalSessionRegistry] which is an abstract implementation of `ReactiveSessionRegistry` that checks the maximum number of sessions allowed when a `ReactiveSessionInformation` is saved.
 
-Spring Security ships with {security-api-url}/org/springframework/security/web/session/WebSessionStoreReactiveSessionRegistry.html[WebSessionStoreReactiveSessionRegistry] and {security-api-url}org/springframework/security/core/session/InMemoryReactiveSessionRegistry.html[InMemoryReactiveSessionRegistry] implementations of `ReactiveSessionRegistry`.
-
-[NOTE]
-====
-When creating the `WebSessionStoreReactiveSessionRegistry`, you need to provide the `WebSessionStore` that is being used by your application.
-If you are using Spring WebFlux, you can use the `WebSessionManager` bean (which is usually an instance of `DefaultWebSessionManager`) to get the `WebSessionStore`.
-====
+Spring Security ships with a {security-api-url}org/springframework/security/core/session/InMemoryReactiveSessionRegistry.html[InMemoryReactiveSessionRegistry] implementation that extends `AbstractConcurrencyControlReactivePrincipalSessionRegistry`.
 
 To specify a `ReactiveSessionRegistry` implementation you can either declare it as a bean:
 
@@ -281,7 +295,8 @@ SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
 
 @Bean
 ReactiveSessionRegistry reactiveSessionRegistry() {
-    return new InMemoryReactiveSessionRegistry();
+    ReactiveMaximumSessionsExceededHandler handler = new MyHandler();
+    return new InMemoryReactiveSessionRegistry(handler);
 }
 ----
 
@@ -303,7 +318,8 @@ open fun springSecurity(http: ServerHttpSecurity): SecurityWebFilterChain {
 
 @Bean
 open fun reactiveSessionRegistry(): ReactiveSessionRegistry {
-    return InMemoryReactiveSessionRegistry()
+    val handler: ReactiveMaximumSessionsExceededHandler = MyHandler()
+    return InMemoryReactiveSessionRegistry(handler)
 }
 ----
 ======
@@ -324,7 +340,7 @@ SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
         .sessionManagement((sessions) -> sessions
             .concurrentSessions((concurrency) -> concurrency
                 .maximumSessions(SessionLimit.of(1))
-                .sessionRegistry(new InMemoryReactiveSessionRegistry())
+                .sessionRegistry(new InMemoryReactiveSessionRegistry(new MyHandler()))
             )
         );
     return http.build();
@@ -342,39 +358,9 @@ open fun springSecurity(http: ServerHttpSecurity): SecurityWebFilterChain {
         sessionManagement {
             sessionConcurrency {
                 maximumSessions = SessionLimit.of(1)
-                sessionRegistry = InMemoryReactiveSessionRegistry()
+                sessionRegistry = InMemoryReactiveSessionRegistry(MyHandler())
             }
         }
-    }
-}
-----
-======
-
-[[reactive-concurrent-sessions-control-manually-invalidating-sessions]]
-== Invalidating Registered User's Sessions
-
-At times, it is handy to be able to invalidate all or some of a user's sessions.
-For example, when a user changes their password, you may want to invalidate all of their sessions so that they are forced to log in again.
-To do that, you can use the `ReactiveSessionRegistry` bean to retrieve all the user's sessions and then invalidate them:
-
-.Using ReactiveSessionRegistry to invalidate sessions manually
-[tabs]
-======
-Java::
-+
-[source,java,role="primary"]
-----
-public class SessionControl {
-    private final ReactiveSessionRegistry reactiveSessionRegistry;
-
-    public SessionControl(ReactiveSessionRegistry reactiveSessionRegistry) {
-        this.reactiveSessionRegistry = reactiveSessionRegistry;
-    }
-
-    public Mono<Void> invalidateSessions(String username) {
-        return this.reactiveSessionRegistry.getAllSessions(username)
-            .flatMap(ReactiveSessionInformation::invalidate)
-            .then();
     }
 }
 ----
