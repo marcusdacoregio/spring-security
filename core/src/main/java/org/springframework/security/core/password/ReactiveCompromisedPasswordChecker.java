@@ -16,21 +16,10 @@
 
 package org.springframework.security.core.password;
 
-/**
- * Base class for exceptions related to passwords. Some common reasons for the exception
- * is if the password has been reused, compromised, leaked, etc.
- *
- * @author Marcus da Coregio
- * @since 6.3
- */
-public abstract class PasswordException extends RuntimeException {
+import reactor.core.publisher.Mono;
 
-	public PasswordException(String message) {
-		super(message);
-	}
+public interface ReactiveCompromisedPasswordChecker {
 
-	public PasswordException(String message, Throwable cause) {
-		super(message, cause);
-	}
+	Mono<CompromisedPasswordCheckResult> check(String password);
 
 }

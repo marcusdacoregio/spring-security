@@ -28,12 +28,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-class LeakedPasswordCheckerTests {
+class HaveIBeenPwnedRestApiPasswordCheckerTests {
 
-	private String pwnedPasswords = """
+	private final String pwnedPasswords = """
 			2CDE4CDCFA5AD7D223BD1800338FBEAA04E:1
 			2CF90F92EE1941547BB13DFC7D0E0AFE504:1
 			2D10A6654B6D75908AE572559542245CBFA:6
@@ -52,7 +51,7 @@ class LeakedPasswordCheckerTests {
 
 	private final MockWebServer server = new MockWebServer();
 
-	private final LeakedPasswordChecker passwordChecker = new LeakedPasswordChecker();
+	private final HaveIBeenPwnedRestApiPasswordChecker passwordChecker = new HaveIBeenPwnedRestApiPasswordChecker();
 
 	@BeforeEach
 	void setup() throws IOException {
@@ -67,32 +66,33 @@ class LeakedPasswordCheckerTests {
 	}
 
 	@Test
-	void checkWhenPasswordIsLeakedThenLeakedPasswordException() throws InterruptedException {
+	void checkWhenPasswordIsLeakedThenIsCompromised() throws InterruptedException {
 		this.server.enqueue(new MockResponse().setBody(this.pwnedPasswords).setResponseCode(200));
-		assertThatExceptionOfType(LeakedPasswordException.class)
-			.isThrownBy(() -> this.passwordChecker.check("P@ssw0rd", null))
-			.withMessage("The provided password has appeared 300185 times in previous data breaches");
+		CompromisedPasswordCheckResult check = this.passwordChecker.check("P@ssw0rd");
+		assertThat(check.isCompromised()).isTrue();
 		assertThat(this.server.takeRequest().getPath()).isEqualTo("/range/21BD1");
 	}
 
 	@Test
-	void checkWhenPasswordNotLeakedThenNoException() {
+	void checkWhenPasswordNotLeakedThenNotCompromised() {
 		this.server.enqueue(new MockResponse().setBody(this.pwnedPasswords).setResponseCode(200));
-		assertThatNoException().isThrownBy(() -> this.passwordChecker.check("My1nCr3d!bL3P@SS0W0RD", null));
+		CompromisedPasswordCheckResult check = this.passwordChecker.check("My1nCr3d!bL3P@SS0W0RD");
+		assertThat(check.isCompromised()).isFalse();
 	}
 
 	@Test
-	void checkWhenNoPasswordsReturnedFromApiCallThenNoException() {
+	void checkWhenNoPasswordsReturnedFromApiCallThenNotCompromised() {
 		this.server.enqueue(new MockResponse().setResponseCode(200));
-		assertThatNoException().isThrownBy(() -> this.passwordChecker.check("123456", null));
+		CompromisedPasswordCheckResult check = this.passwordChecker.check("123456");
+		assertThat(check.isCompromised()).isFalse();
 	}
 
 	@Test
-	void checkWhenResponseStatusNot200ThenNoException() {
+	void checkWhenResponseStatusNot200ThenNotCompromised() {
 		this.server.enqueue(new MockResponse().setResponseCode(503));
-		assertThatNoException().isThrownBy(() -> this.passwordChecker.check("123456", null));
-		this.server.enqueue(new MockResponse().setResponseCode(302));
-		assertThatNoException().isThrownBy(() -> this.passwordChecker.check("123456", null));
+		assertThatNoException().isThrownBy(() -> this.passwordChecker.check("123456"));
+		this.server.enqueue(new MockResponse().setResponseCode(404));
+		assertThatNoException().isThrownBy(() -> this.passwordChecker.check("123456"));
 	}
 
 }

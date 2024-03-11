@@ -16,11 +16,16 @@
 
 package org.springframework.security.core.password;
 
-public class NoOpPasswordChecker implements PasswordChecker {
+public class CompromisedPasswordCheckResult {
 
-	@Override
-	public void check(String password, String username) {
+	private final boolean compromised;
 
+	public CompromisedPasswordCheckResult(boolean compromised) {
+		this.compromised = compromised;
+	}
+
+	public boolean isCompromised() {
+		return this.compromised;
 	}
 
 }

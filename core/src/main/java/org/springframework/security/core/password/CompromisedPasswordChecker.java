@@ -16,10 +16,19 @@
 
 package org.springframework.security.core.password;
 
-import org.springframework.lang.Nullable;
+import org.springframework.lang.NonNull;
 
-public interface PasswordChecker {
+/**
+ * An API for performing checks against a provided password and optionally a username.
+ * Implementations of this interface should throw {@link CompromisedPasswordException} if
+ * needed.
+ *
+ * @author Marcus da Coregio
+ * @since 6.3
+ */
+public interface CompromisedPasswordChecker {
 
-	void check(String password, @Nullable String username);
+	@NonNull
+	CompromisedPasswordCheckResult check(String password);
 
 }

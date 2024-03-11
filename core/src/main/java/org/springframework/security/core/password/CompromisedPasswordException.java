@@ -16,16 +16,23 @@
 
 package org.springframework.security.core.password;
 
+import org.springframework.security.core.AuthenticationException;
+
 /**
- * Indicates that the password has been leaked
+ * Indicates that the provided password is compromised
  *
  * @author Marcus da Coregio
  * @since 6.3
+ * @see HaveIBeenPwnedRestApiPasswordChecker
  */
-public class LeakedPasswordException extends PasswordException {
+public class CompromisedPasswordException extends AuthenticationException {
 
-	public LeakedPasswordException(String message) {
+	public CompromisedPasswordException(String message) {
 		super(message);
+	}
+
+	public CompromisedPasswordException(String message, Throwable cause) {
+		super(message, cause);
 	}
 
 }
