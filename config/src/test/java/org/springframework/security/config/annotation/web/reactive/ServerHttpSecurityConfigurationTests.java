@@ -63,18 +63,15 @@ public class ServerHttpSecurityConfigurationTests {
 
 	@Autowired
 	void setup(ApplicationContext context) {
-		this.webClient = WebTestClient
-				.bindToApplicationContext(context)
-				.configureClient()
-				.build();
+		this.webClient = WebTestClient.bindToApplicationContext(context).configureClient().build();
 	}
 
 	@Test
 	public void loadConfigWhenReactiveUserDetailsServiceConfiguredThenServerHttpSecurityExists() {
 		this.spring
-				.register(ServerHttpSecurityConfiguration.class, ReactiveAuthenticationTestConfiguration.class,
-						WebFluxSecurityConfiguration.class)
-				.autowire();
+			.register(ServerHttpSecurityConfiguration.class, ReactiveAuthenticationTestConfiguration.class,
+					WebFluxSecurityConfiguration.class)
+			.autowire();
 		ServerHttpSecurity serverHttpSecurity = this.spring.getContext().getBean(ServerHttpSecurity.class);
 		assertThat(serverHttpSecurity).isNotNull();
 	}
@@ -82,16 +79,17 @@ public class ServerHttpSecurityConfigurationTests {
 	@Test
 	public void loadConfigWhenProxyingEnabledAndSubclassThenServerHttpSecurityExists() {
 		this.spring
-				.register(SubclassConfig.class, ReactiveAuthenticationTestConfiguration.class,
-						WebFluxSecurityConfiguration.class)
-				.autowire();
+			.register(SubclassConfig.class, ReactiveAuthenticationTestConfiguration.class,
+					WebFluxSecurityConfiguration.class)
+			.autowire();
 		ServerHttpSecurity serverHttpSecurity = this.spring.getContext().getBean(ServerHttpSecurity.class);
 		assertThat(serverHttpSecurity).isNotNull();
 	}
 
 	@Test
 	void loginWhenCompromisePasswordCheckerConfiguredAndPasswordCompromisedThenUnauthorized() {
-		this.spring.register(FormLoginConfig.class, UserDetailsConfig.class, CompromisedPasswordCheckerConfig.class).autowire();
+		this.spring.register(FormLoginConfig.class, UserDetailsConfig.class, CompromisedPasswordCheckerConfig.class)
+			.autowire();
 		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
 		data.add("username", "user");
 		data.add("password", "password");
@@ -108,7 +106,8 @@ public class ServerHttpSecurityConfigurationTests {
 
 	@Test
 	void loginWhenCompromisePasswordCheckerConfiguredAndPasswordNotCompromisedThenUnauthorized() {
-		this.spring.register(FormLoginConfig.class, UserDetailsConfig.class, CompromisedPasswordCheckerConfig.class).autowire();
+		this.spring.register(FormLoginConfig.class, UserDetailsConfig.class, CompromisedPasswordCheckerConfig.class)
+			.autowire();
 		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
 		data.add("username", "admin");
 		data.add("password", "password2");
@@ -125,7 +124,10 @@ public class ServerHttpSecurityConfigurationTests {
 
 	@Test
 	void loginWhenCompromisedPasswordAndRedirectIfPasswordExceptionThenRedirectedToResetPassword() {
-		this.spring.register(FormLoginRedirectToResetPasswordConfig.class, UserDetailsConfig.class, CompromisedPasswordCheckerConfig.class).autowire();
+		this.spring
+			.register(FormLoginRedirectToResetPasswordConfig.class, UserDetailsConfig.class,
+					CompromisedPasswordCheckerConfig.class)
+			.autowire();
 		MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
 		data.add("username", "user");
 		data.add("password", "password");

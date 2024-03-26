@@ -91,7 +91,7 @@ class HaveIBeenPwnedRestApiReactivePasswordCheckerTests {
 	}
 
 	@Test
-	void checkWhenResponseStatusNot200ThenIsCompromised() {
+	void checkWhenResponseStatusNot200ThenNotCompromised() {
 		this.server.enqueue(new MockResponse().setResponseCode(503));
 		StepVerifier.create(this.passwordChecker.check("123456"))
 			.assertNext((check) -> assertThat(check.isCompromised()).isFalse())

@@ -29,9 +29,19 @@ import reactor.core.scheduler.Schedulers;
 import org.springframework.security.crypto.codec.Hex;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+/**
+ * Checks if the provided password was leaked by relying on
+ * <a href="https://www.haveibeenpwned.com/API/v3#PwnedPasswords">Have I Been Pwned REST
+ * API</a>. This implementation uses the Search by Range in order to protect the value of
+ * the source password being searched for.
+ *
+ * @author Marcus da Coregio
+ * @since 6.3
+ */
 public class HaveIBeenPwnedRestApiReactivePasswordChecker implements ReactiveCompromisedPasswordChecker {
 
 	private final Log logger = LogFactory.getLog(getClass());
@@ -72,6 +82,11 @@ public class HaveIBeenPwnedRestApiReactivePasswordChecker implements ReactiveCom
 			.onErrorResume(WebClientResponseException.class, (ex) -> Flux.empty());
 	}
 
+	/**
+	 * Sets the {@link WebClient} to use when making requests to Have I Been Pwned REST
+	 * API. By default, a {@link WebClient} with a base URL of {@link #API_URL} is used.
+	 * @param webClient the {@link WebClient} to use
+	 */
 	public void setWebClient(WebClient webClient) {
 		Assert.notNull(webClient, "webClient cannot be null");
 		this.webClient = webClient;

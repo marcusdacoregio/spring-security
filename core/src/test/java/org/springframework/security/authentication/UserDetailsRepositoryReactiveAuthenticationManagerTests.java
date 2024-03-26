@@ -243,6 +243,23 @@ public class UserDetailsRepositoryReactiveAuthenticationManagerTests {
 	}
 
 	@Test
+	public void authenticateWhenPasswordNotCompromisedThenSuccess() {
+		// @formatter:off
+		UserDetails user = User.withUsername("user")
+				.password("{noop}notcompromised")
+				.roles("USER")
+				.build();
+		// @formatter:on
+		given(this.userDetailsService.findByUsername(any())).willReturn(Mono.just(user));
+		this.manager.setCompromisedPasswordChecker(new TestReactivePasswordChecker());
+		UsernamePasswordAuthenticationToken token = UsernamePasswordAuthenticationToken.unauthenticated(user,
+				"notcompromised");
+		StepVerifier.create(this.manager.authenticate(token))
+			.assertNext((authentication) -> assertThat(authentication.getPrincipal()).isEqualTo(user))
+			.verifyComplete();
+	}
+
+	@Test
 	public void setMessageSourceWhenNullThenThrowsException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> this.manager.setMessageSource(null));
 	}

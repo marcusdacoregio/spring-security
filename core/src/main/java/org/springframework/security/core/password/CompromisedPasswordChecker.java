@@ -19,15 +19,18 @@ package org.springframework.security.core.password;
 import org.springframework.lang.NonNull;
 
 /**
- * An API for performing checks against a provided password and optionally a username.
- * Implementations of this interface should throw {@link CompromisedPasswordException} if
- * needed.
+ * An API for checking if a password has been compromised.
  *
  * @author Marcus da Coregio
  * @since 6.3
  */
 public interface CompromisedPasswordChecker {
 
+	/**
+	 * Check whether the password is compromised
+	 * @param password the password to check
+	 * @return a non-null {@link CompromisedPasswordCheckResult}
+	 */
 	@NonNull
 	CompromisedPasswordCheckResult check(String password);
 

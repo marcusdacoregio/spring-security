@@ -18,8 +18,19 @@ package org.springframework.security.core.password;
 
 import reactor.core.publisher.Mono;
 
+/**
+ * A Reactive API for checking if a password has been compromised.
+ *
+ * @author Marcus da Coregio
+ * @since 6.3
+ */
 public interface ReactiveCompromisedPasswordChecker {
 
+	/**
+	 * Check whether the password is compromised
+	 * @param password the password to check
+	 * @return a {@link Mono} containing the {@link CompromisedPasswordCheckResult}
+	 */
 	Mono<CompromisedPasswordCheckResult> check(String password);
 
 }
