@@ -1293,7 +1293,7 @@ public class PrePostMethodSecurityConfigurationTests {
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	@PreAuthorize("hasRole({role})")
+	@org.springframework.security.authorization.method.PreAuthorize("hasRole({role})")
 	@interface RequireRole {
 
 		String role();
@@ -1301,7 +1301,7 @@ public class PrePostMethodSecurityConfigurationTests {
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	@PreAuthorize("hasAuthority('SCOPE_{claim}') || hasAnyRole({roles})")
+	@org.springframework.security.authorization.method.PreAuthorize("hasAuthority('SCOPE_{claim}') || hasAnyRole({roles})")
 	@interface HasClaim {
 
 		String claim();
@@ -1311,7 +1311,7 @@ public class PrePostMethodSecurityConfigurationTests {
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	@PostAuthorize("returnObject.startsWith('{value}')")
+	@org.springframework.security.authorization.method.PostAuthorize("returnObject.startsWith('{value}')")
 	@interface ResultStartsWith {
 
 		String value();

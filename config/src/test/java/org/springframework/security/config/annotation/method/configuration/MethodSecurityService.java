@@ -127,50 +127,62 @@ public interface MethodSecurityService {
 	@RequireAdminRole
 	void repeatedAnnotations();
 
-	@PreAuthorize(value = "hasRole('ADMIN')", handlerClass = StarMaskingHandler.class)
+	@org.springframework.security.authorization.method.PreAuthorize(value = "hasRole('ADMIN')",
+			handlerClass = StarMaskingHandler.class)
 	String preAuthorizeGetCardNumberIfAdmin(String cardNumber);
 
-	@PreAuthorize(value = "hasRole('ADMIN')", handlerClass = StartMaskingHandlerChild.class)
+	@org.springframework.security.authorization.method.PreAuthorize(value = "hasRole('ADMIN')",
+			handlerClass = StartMaskingHandlerChild.class)
 	String preAuthorizeWithHandlerChildGetCardNumberIfAdmin(String cardNumber);
 
-	@PreAuthorize(value = "hasRole('ADMIN')", handlerClass = StarMaskingHandler.class)
+	@org.springframework.security.authorization.method.PreAuthorize(value = "hasRole('ADMIN')",
+			handlerClass = StarMaskingHandler.class)
 	String preAuthorizeThrowAccessDeniedManually();
 
-	@PostAuthorize(value = "hasRole('ADMIN')", postProcessorClass = CardNumberMaskingPostProcessor.class)
+	@org.springframework.security.authorization.method.PostAuthorize(value = "hasRole('ADMIN')",
+			postProcessorClass = CardNumberMaskingPostProcessor.class)
 	String postAuthorizeGetCardNumberIfAdmin(String cardNumber);
 
-	@PostAuthorize(value = "hasRole('ADMIN')", postProcessorClass = PostMaskingPostProcessor.class)
+	@org.springframework.security.authorization.method.PostAuthorize(value = "hasRole('ADMIN')",
+			postProcessorClass = PostMaskingPostProcessor.class)
 	String postAuthorizeThrowAccessDeniedManually();
 
-	@PreAuthorize(value = "denyAll()", handlerClass = MaskAnnotationHandler.class)
+	@org.springframework.security.authorization.method.PreAuthorize(value = "denyAll()",
+			handlerClass = MaskAnnotationHandler.class)
 	@Mask("methodmask")
 	String preAuthorizeDeniedMethodWithMaskAnnotation();
 
-	@PreAuthorize(value = "denyAll()", handlerClass = MaskAnnotationHandler.class)
+	@org.springframework.security.authorization.method.PreAuthorize(value = "denyAll()",
+			handlerClass = MaskAnnotationHandler.class)
 	String preAuthorizeDeniedMethodWithNoMaskAnnotation();
 
 	@NullDenied(role = "ADMIN")
 	String postAuthorizeDeniedWithNullDenied();
 
-	@PostAuthorize(value = "denyAll()", postProcessorClass = MaskAnnotationPostProcessor.class)
+	@org.springframework.security.authorization.method.PostAuthorize(value = "denyAll()",
+			postProcessorClass = MaskAnnotationPostProcessor.class)
 	@Mask("methodmask")
 	String postAuthorizeDeniedMethodWithMaskAnnotation();
 
-	@PostAuthorize(value = "denyAll()", postProcessorClass = MaskAnnotationPostProcessor.class)
+	@org.springframework.security.authorization.method.PostAuthorize(value = "denyAll()",
+			postProcessorClass = MaskAnnotationPostProcessor.class)
 	String postAuthorizeDeniedMethodWithNoMaskAnnotation();
 
-	@PreAuthorize(value = "hasRole('ADMIN')", handlerClass = MaskAnnotationHandler.class)
+	@org.springframework.security.authorization.method.PreAuthorize(value = "hasRole('ADMIN')",
+			handlerClass = MaskAnnotationHandler.class)
 	@Mask(expression = "@myMasker.getMask()")
 	String preAuthorizeWithMaskAnnotationUsingBean();
 
-	@PostAuthorize(value = "hasRole('ADMIN')", postProcessorClass = MaskAnnotationPostProcessor.class)
+	@org.springframework.security.authorization.method.PostAuthorize(value = "hasRole('ADMIN')",
+			postProcessorClass = MaskAnnotationPostProcessor.class)
 	@Mask(expression = "@myMasker.getMask(returnObject)")
 	String postAuthorizeWithMaskAnnotationUsingBean();
 
 	@AuthorizeReturnObject
 	UserRecordWithEmailProtected getUserRecordWithEmailProtected();
 
-	@PreAuthorize(value = "hasRole('ADMIN')", handlerClass = UserFallbackDeniedHandler.class)
+	@org.springframework.security.authorization.method.PreAuthorize(value = "hasRole('ADMIN')",
+			handlerClass = UserFallbackDeniedHandler.class)
 	UserRecordWithEmailProtected getUserWithFallbackWhenUnauthorized();
 
 	class StarMaskingHandler implements MethodAuthorizationDeniedHandler {
@@ -300,7 +312,8 @@ public interface MethodSecurityService {
 	@Target({ ElementType.METHOD, ElementType.TYPE })
 	@Retention(RetentionPolicy.RUNTIME)
 	@Inherited
-	@PostAuthorize(value = "hasRole('{value}')", postProcessorClass = NullPostProcessor.class)
+	@org.springframework.security.authorization.method.PostAuthorize(value = "hasRole('{value}')",
+			postProcessorClass = NullPostProcessor.class)
 	@interface NullDenied {
 
 		String role();

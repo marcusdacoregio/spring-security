@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.security.access.prepost;
+package org.springframework.security.authorization.method;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -23,30 +23,29 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.springframework.core.annotation.AliasFor;
-
 /**
- * Annotation for specifying a method access-control expression which will be evaluated
- * after a method has been invoked.
+ * Annotation for specifying a method access-control expression which will be evaluated to
+ * decide whether a method invocation is allowed or not.
  *
  * @author Luke Taylor
- * @since 3.0
- * @deprecated Use {@link org.springframework.security.authorization.method.PostAuthorize}
- * instead
+ * @since 6.3
  */
 @Target({ ElementType.METHOD, ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-@Deprecated(since = "6.3", forRemoval = true)
-@org.springframework.security.authorization.method.PostAuthorize(value = "")
-public @interface PostAuthorize {
+public @interface PreAuthorize {
 
 	/**
-	 * @return the Spring-EL expression to be evaluated after invoking the protected
+	 * @return the Spring-EL expression to be evaluated before invoking the protected
 	 * method
 	 */
-	@AliasFor(attribute = "value", annotation = org.springframework.security.authorization.method.PostAuthorize.class)
 	String value();
+
+	/**
+	 * @return the {@link MethodAuthorizationDeniedHandler} class used to handle access
+	 * denied
+	 */
+	Class<? extends MethodAuthorizationDeniedHandler> handlerClass() default ThrowingMethodAuthorizationDeniedHandler.class;
 
 }

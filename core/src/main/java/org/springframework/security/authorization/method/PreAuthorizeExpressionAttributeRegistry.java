@@ -26,7 +26,6 @@ import reactor.util.annotation.NonNull;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.expression.Expression;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.Assert;
 
 /**

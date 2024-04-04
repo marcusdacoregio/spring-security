@@ -27,7 +27,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.aop.Pointcut;
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationEventPublisher;

@@ -16,10 +16,10 @@
 
 package org.springframework.security.config.annotation.method.configuration;
 
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.method.MethodAuthorizationDeniedPostProcessor;
 import org.springframework.security.authorization.method.MethodInvocationResult;
+import org.springframework.security.authorization.method.PostAuthorize;
 
 public class UserRecordWithEmailProtected {
 

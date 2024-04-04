@@ -136,7 +136,7 @@ final class AuthorizationAnnotationUtils {
 		MergedAnnotations mergedAnnotations = MergedAnnotations.from(annotatedElement, SearchStrategy.TYPE_HIERARCHY,
 				RepeatableContainers.none());
 		List<A> annotations = mergedAnnotations.stream(annotationType)
-			.map(MergedAnnotation::withNonMergedAttributes)
+			.map(AuthorizationAnnotationUtils::withNonMergedAttributes)
 			.map(map)
 			.distinct()
 			.toList();
@@ -149,6 +149,28 @@ final class AuthorizationAnnotationUtils {
 					Found %d competing annotations: %s""".formatted(annotationType.getName(), annotatedElement,
 					annotations.size(), annotations));
 		};
+	}
+
+	private static <A extends Annotation> MergedAnnotation<A> withNonMergedAttributes(
+			MergedAnnotation<A> mergedAnnotation) {
+		MergedAnnotation<?> metaSource = mergedAnnotation.getMetaSource();
+		if (metaSource == null) {
+			return mergedAnnotation.withNonMergedAttributes();
+		}
+		boolean isNewPrePost = mergedAnnotation.getType() == PreAuthorize.class
+				|| mergedAnnotation.getType() == PostAuthorize.class;
+		boolean isNewPrePostMetaAnnotatedOnOldPrePost = isNewPrePost
+				&& (metaSource.getType() == org.springframework.security.access.prepost.PreAuthorize.class
+						|| metaSource.getType() == org.springframework.security.access.prepost.PostAuthorize.class);
+		if (isNewPrePostMetaAnnotatedOnOldPrePost) {
+			// In this scenario we allow merged attributes since the deprecated
+			// Pre/PostAuthorize annotations
+			// are meta-annotated with the new Pre/PostAuthorize and the @AliasFor should
+			// be resolved considering
+			// the meta-source
+			return mergedAnnotation;
+		}
+		return mergedAnnotation.withNonMergedAttributes();
 	}
 
 	private AuthorizationAnnotationUtils() {

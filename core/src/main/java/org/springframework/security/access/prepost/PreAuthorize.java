@@ -23,8 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.springframework.security.authorization.method.MethodAuthorizationDeniedHandler;
-import org.springframework.security.authorization.method.ThrowingMethodAuthorizationDeniedHandler;
+import org.springframework.core.annotation.AliasFor;
 
 /**
  * Annotation for specifying a method access-control expression which will be evaluated to
@@ -32,23 +31,22 @@ import org.springframework.security.authorization.method.ThrowingMethodAuthoriza
  *
  * @author Luke Taylor
  * @since 3.0
+ * @deprecated Use {@link org.springframework.security.authorization.method.PreAuthorize}
+ * instead
  */
 @Target({ ElementType.METHOD, ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
+@Deprecated(since = "6.3", forRemoval = true)
+@org.springframework.security.authorization.method.PreAuthorize(value = "")
 public @interface PreAuthorize {
 
 	/**
 	 * @return the Spring-EL expression to be evaluated before invoking the protected
 	 * method
 	 */
+	@AliasFor(attribute = "value", annotation = org.springframework.security.authorization.method.PreAuthorize.class)
 	String value();
-
-	/**
-	 * @return the {@link MethodAuthorizationDeniedHandler} class used to handle access
-	 * denied
-	 */
-	Class<? extends MethodAuthorizationDeniedHandler> handlerClass() default ThrowingMethodAuthorizationDeniedHandler.class;
 
 }
