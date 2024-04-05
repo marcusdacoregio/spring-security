@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jetbrains.annotations.NotNull;
 
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.Aware;
@@ -81,6 +80,18 @@ final class AutowireBeanFactoryObjectPostProcessor
 		return result;
 	}
 
+	/**
+	 * Invokes {@link AutowireCapableBeanFactory#initializeBean(Object, String)} only if
+	 * needed, i.e when the application is not a native image or the object is not a CGLIB
+	 * proxy.
+	 * @param object the object to initialize
+	 * @param <T> the type of the object
+	 * @return the initialized bean or an existing bean if the object is a CGLIB proxy and
+	 * the application is a native image
+	 * @see <a href=
+	 * "https://github.com/spring-projects/spring-security/issues/14825">Issue
+	 * gh-14825</a>
+	 */
 	@SuppressWarnings("unchecked")
 	private <T> T initializeBeanIfNeeded(T object) {
 		if (!NativeDetector.inNativeImage() || !AopUtils.isCglibProxy(object)) {
@@ -92,7 +103,8 @@ final class AutowireBeanFactoryObjectPostProcessor
 			String msg = """
 					Failed to resolve an unique bean (single or primary) of type [%s] from the BeanFactory.
 					Because the object is a CGLIB Proxy, a raw bean cannot be initialized during runtime in a native image.
-					""".formatted(object.getClass());
+					"""
+				.formatted(object.getClass());
 			throw new IllegalStateException(msg);
 		}
 		return (T) bean;
